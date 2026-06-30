@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Animal island river wallpaper</title>
+  <desc id="desc">A warm parchment island wallpaper with a winding mint river, rounded hills, fruit trees, and floating leaves.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff9e3"/>
+      <stop offset="0.62" stop-color="#f8f8f0"/>
+      <stop offset="1" stop-color="#d6f0d4"/>
+    </linearGradient>
+    <linearGradient id="river" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#98d2e3"/>
+      <stop offset="0.5" stop-color="#19c8b9"/>
+      <stop offset="1" stop-color="#327a93"/>
+    </linearGradient>
+    <filter id="paperNoise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="4" seed="42"/>
+      <feColorMatrix type="saturate" values="0.38"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.12"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+    <pattern id="softDots" width="120" height="120" patternUnits="userSpaceOnUse">
+      <circle cx="22" cy="40" r="4" fill="#f7cd67" opacity="0.16"/>
+      <circle cx="84" cy="74" r="3" fill="#19c8b9" opacity="0.13"/>
+      <path d="M46 92c18-13 35-10 48 5-18 13-36 11-48-5Z" fill="#6fba2c" opacity="0.1"/>
+    </pattern>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky)" filter="url(#paperNoise)"/>
+  <rect width="1920" height="1080" fill="url(#softDots)"/>
+  <circle cx="292" cy="178" r="126" fill="#f7cd67" opacity="0.48"/>
+
+  <path d="M-40 636c216-94 392-112 528-54 138 59 288 64 450 16 202-60 376-44 522 48 122 77 284 92 500 44v390H-40Z" fill="#bde5bb"/>
+  <path d="M-40 750c260-70 466-50 618 60 132 95 306 98 522 10 190-78 354-76 492 6 112 66 236 94 368 84v170H-40Z" fill="#8ac68a"/>
+  <path d="M1130-40c-138 194-138 356 0 486 120 114 110 244-32 390-74 76-92 158-54 244h278c-42-86-20-164 66-234 166-136 194-298 84-486-90-154-68-287 66-400Z" fill="url(#river)" opacity="0.86"/>
+  <path d="M1214 4c-82 132-64 252 54 360 104 95 82 216-66 363-66 65-82 130-48 197" fill="none" stroke="#fff9e3" stroke-width="12" stroke-linecap="round" opacity="0.58"/>
+
+  <g transform="translate(244 558)">
+    <rect x="-13" y="116" width="26" height="120" rx="13" fill="#9a835a"/>
+    <circle cx="0" cy="62" r="78" fill="#82d5bb"/>
+    <circle cx="-44" cy="86" r="38" fill="#8ac68a"/>
+    <circle cx="46" cy="92" r="44" fill="#d1da49"/>
+    <circle cx="-24" cy="40" r="9" fill="#f7cd67" stroke="#725d42" stroke-width="4"/>
+    <circle cx="32" cy="74" r="9" fill="#f7cd67" stroke="#725d42" stroke-width="4"/>
+  </g>
+  <g transform="translate(496 630) scale(.74)">
+    <rect x="-13" y="116" width="26" height="120" rx="13" fill="#9a835a"/>
+    <circle cx="0" cy="62" r="78" fill="#82d5bb"/>
+    <circle cx="-44" cy="86" r="38" fill="#8ac68a"/>
+    <circle cx="46" cy="92" r="44" fill="#d1da49"/>
+  </g>
+  <g transform="translate(1640 574) scale(.88)">
+    <rect x="-13" y="116" width="26" height="120" rx="13" fill="#9a835a"/>
+    <circle cx="0" cy="62" r="78" fill="#82d5bb"/>
+    <circle cx="-44" cy="86" r="38" fill="#8ac68a"/>
+    <circle cx="46" cy="92" r="44" fill="#d1da49"/>
+    <circle cx="-30" cy="80" r="9" fill="#fc736d" stroke="#725d42" stroke-width="4"/>
+  </g>
+
+  <g fill="none" stroke="#725d42" stroke-linecap="round" opacity="0.18">
+    <path d="M84 246c104-38 212-42 324-12"/>
+    <path d="M1342 224c140-42 282-36 426 18"/>
+    <path d="M202 884c186 34 376 30 570-12"/>
+  </g>
+</svg>

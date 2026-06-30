@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" role="img" aria-labelledby="title desc">
+  <title id="title">Animal island village mobile wallpaper</title>
+  <desc id="desc">A portrait animal-island village wallpaper with soft clay houses, warm lanterns, trees, and an ocean footer.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff4d8"/>
+      <stop offset="0.55" stop-color="#f7f3df"/>
+      <stop offset="1" stop-color="#cbe9c8"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#98d2e3"/>
+      <stop offset="1" stop-color="#327a93"/>
+    </linearGradient>
+    <filter id="paperNoise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="4" seed="86"/>
+      <feColorMatrix type="saturate" values="0.34"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.12"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#sky)" filter="url(#paperNoise)"/>
+  <circle cx="806" cy="236" r="136" fill="#f7cd67" opacity="0.5"/>
+  <path d="M0 1060c174-92 334-102 480-30 128 63 268 58 420-14 96-46 186-34 270 36v868H0Z" fill="#8ac68a"/>
+  <path d="M0 1280c208-64 384-36 528 84 136 113 286 104 450-26 72-57 136-64 192-20v602H0Z" fill="#6fba2c" opacity="0.9"/>
+  <g transform="translate(264 880) scale(.9)">
+    <path d="M-132 86 0-30 132 86Z" fill="#e59266" stroke="#725d42" stroke-width="8" stroke-linejoin="round"/>
+    <rect x="-104" y="82" width="208" height="160" rx="28" fill="#f7f3df" stroke="#725d42" stroke-width="8"/>
+    <rect x="-34" y="144" width="68" height="98" rx="28" fill="#82d5bb" stroke="#725d42" stroke-width="7"/>
+    <circle cx="-64" cy="128" r="18" fill="#f7cd67" stroke="#725d42" stroke-width="6"/>
+    <circle cx="66" cy="128" r="18" fill="#f8a6b2" stroke="#725d42" stroke-width="6"/>
+  </g>
+  <g transform="translate(662 936) scale(.82)">
+    <path d="M-132 86 0-30 132 86Z" fill="#f7cd67" stroke="#725d42" stroke-width="8" stroke-linejoin="round"/>
+    <rect x="-104" y="82" width="208" height="160" rx="28" fill="#f7f3df" stroke="#725d42" stroke-width="8"/>
+    <rect x="-34" y="144" width="68" height="98" rx="28" fill="#b77dee" stroke="#725d42" stroke-width="7"/>
+    <circle cx="-64" cy="128" r="18" fill="#82d5bb" stroke="#725d42" stroke-width="6"/>
+    <circle cx="66" cy="128" r="18" fill="#fc736d" stroke="#725d42" stroke-width="6"/>
+  </g>
+  <g transform="translate(516 1180) scale(.88)">
+    <path d="M-132 86 0-30 132 86Z" fill="#82d5bb" stroke="#725d42" stroke-width="8" stroke-linejoin="round"/>
+    <rect x="-104" y="82" width="208" height="160" rx="28" fill="#f7f3df" stroke="#725d42" stroke-width="8"/>
+    <rect x="-34" y="144" width="68" height="98" rx="28" fill="#e59266" stroke="#725d42" stroke-width="7"/>
+    <circle cx="-64" cy="128" r="18" fill="#d1da49" stroke="#725d42" stroke-width="6"/>
+    <circle cx="66" cy="128" r="18" fill="#889df0" stroke="#725d42" stroke-width="6"/>
+  </g>
+  <g transform="translate(142 1112) scale(.72)">
+    <rect x="-10" y="126" width="20" height="104" rx="10" fill="#9a835a"/>
+    <circle r="74" fill="#82d5bb"/>
+    <circle cx="-38" cy="28" r="42" fill="#d1da49"/>
+  </g>
+  <g transform="translate(914 1190) scale(.78)">
+    <rect x="-10" y="126" width="20" height="104" rx="10" fill="#9a835a"/>
+    <circle r="74" fill="#82d5bb"/>
+    <circle cx="38" cy="28" r="42" fill="#d1da49"/>
+  </g>
+  <g opacity="0.9">
+    <path d="M0 1658c90 30 180 30 270 0s180-30 270 0 180 30 270 0 180-30 270 0v262H0Z" fill="url(#sea)"/>
+    <path d="M0 1684c90 30 180 30 270 0s180-30 270 0 180 30 270 0 180-30 270 0" fill="none" stroke="#fff9e3" stroke-width="10" stroke-linecap="round" opacity="0.72"/>
+  </g>
+  <g fill="#f7cd67" stroke="#725d42" stroke-width="5" opacity="0.78">
+    <path d="M154 330c28-22 56-20 76 8-28 23-56 20-76-8Z"/>
+    <path d="M792 442c30-24 60-20 82 10-31 25-62 21-82-10Z"/>
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Forest owl icon</title>
+  <desc id="desc">A warm animal-island style owl icon with mint wings and leaf details.</desc>
+  <path d="M42 132c0-54 38-92 86-92s86 38 86 92c0 48-36 86-86 86s-86-38-86-86Z" fill="#F7F3DF" stroke="#4C3C33" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M65 139c10 36 35 58 63 58s53-22 63-58" fill="#82D5BB"/>
+  <path d="M72 129c5 48 27 77 56 77s51-29 56-77" stroke="#409B5E" stroke-width="9" stroke-linecap="round" opacity=".55"/>
+  <path d="M61 82c-5-24 8-42 30-51 13 18 13 37-1 56" fill="#F7CD67" stroke="#4C3C33" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M195 82c5-24-8-42-30-51-13 18-13 37 1 56" fill="#F7CD67" stroke="#4C3C33" stroke-width="10" stroke-linejoin="round"/>
+  <circle cx="94" cy="111" r="28" fill="#FFF9E3" stroke="#4C3C33" stroke-width="9"/>
+  <circle cx="162" cy="111" r="28" fill="#FFF9E3" stroke="#4C3C33" stroke-width="9"/>
+  <circle cx="99" cy="116" r="10" fill="#4C3C33"/>
+  <circle cx="157" cy="116" r="10" fill="#4C3C33"/>
+  <path d="M128 130l15 19h-30l15-19Z" fill="#E18C6F" stroke="#4C3C33" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M96 167c18 12 46 12 64 0" stroke="#725D42" stroke-width="8" stroke-linecap="round"/>
+  <path d="M189 35c22 2 35 18 29 41-23-1-36-18-29-41Z" fill="#6FBA2C" stroke="#4C3C33" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M199 49c-8 7-15 15-20 25" stroke="#409B5E" stroke-width="5" stroke-linecap="round"/>
+</svg>

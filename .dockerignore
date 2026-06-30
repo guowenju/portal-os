@@ -1,0 +1,14 @@
+.git
+.codex
+.vscode
+node_modules
+target
+apps/frontend/node_modules
+apps/frontend/dist
+apps/backend/target
+dist
+coverage
+*.log
+.eslintcache
+*.tsbuildinfo
+Dockerfile-Example

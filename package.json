@@ -1,0 +1,14 @@
+{
+  "name": "portal-os-workspace",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "version:set": "node scripts/set-version.mjs",
+    "dev": "pnpm --dir apps/frontend dev",
+    "build": "pnpm --dir apps/frontend build",
+    "preview": "pnpm --dir apps/frontend preview",
+    "lint": "pnpm --dir apps/frontend lint",
+    "format": "pnpm --dir apps/frontend format"
+  }
+}

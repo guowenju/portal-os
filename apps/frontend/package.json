@@ -1,0 +1,44 @@
+{
+  "name": "portal-os",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "tsc --build",
+    "lint:eslint": "eslint . --fix --cache",
+    "lint": "eslint .",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "axios": "^1.15.2",
+    "highlight.js": "^11.11.1",
+    "i18next": "^26.2.0",
+    "markdown-it": "^14.1.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-i18next": "^17.0.8",
+    "react-router-dom": "^7.15.1",
+    "zustand": "^5.0.13",
+    "animal-island-ui": "^0.9.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^25.8.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "6.0.3",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "prettier": "3.7.4",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "8.0.12"
+  }
+}

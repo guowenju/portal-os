@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Animal island desktop wallpaper</title>
+  <desc id="desc">A warm animal-island style desktop wallpaper with parchment sky, soft hills, trees, waves, and playful floating leaves.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff9e3"/>
+      <stop offset="0.54" stop-color="#f8f8f0"/>
+      <stop offset="1" stop-color="#d6f0d4"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#98d2e3"/>
+      <stop offset="0.55" stop-color="#82d5bb"/>
+      <stop offset="1" stop-color="#327a93"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fff5b8"/>
+      <stop offset="0.74" stop-color="#f7cd67"/>
+      <stop offset="1" stop-color="#f7cd67" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="paperNoise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="28"/>
+      <feColorMatrix type="saturate" values="0.35"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.13"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+    <pattern id="leafDots" width="96" height="96" patternUnits="userSpaceOnUse">
+      <path d="M24 24c18-16 36-12 47 6-18 16-36 14-47-6Z" fill="#19c8b9" opacity="0.08"/>
+      <path d="M62 68c12-14 26-14 38-2-12 13-27 14-38 2Z" fill="#6fba2c" opacity="0.08"/>
+      <circle cx="18" cy="72" r="4" fill="#f7cd67" opacity="0.14"/>
+    </pattern>
+    <path id="tree" d="M0 0c-34 0-61 28-61 62 0 24 14 45 34 55-4 9-6 18-6 28 0 36 29 65 65 65s65-29 65-65c0-12-3-24-9-34 16-12 26-31 26-52 0-36-29-65-65-65-13 0-25 4-35 10A61 61 0 0 0 0 0Z"/>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#sky)" filter="url(#paperNoise)"/>
+  <rect width="1920" height="1080" fill="url(#leafDots)"/>
+  <circle cx="1540" cy="172" r="166" fill="url(#sun)" opacity="0.82"/>
+
+  <g opacity="0.68">
+    <path d="M-40 640c198-134 396-176 594-126 134 34 258 99 402 86 156-14 282-118 456-124 178-6 342 82 548 210v394H-40Z" fill="#bde5bb"/>
+    <path d="M-40 708c214-102 394-126 540-72 154 57 264 124 452 78 166-41 310-130 500-88 156 34 316 120 508 190v264H-40Z" fill="#8ac68a"/>
+    <path d="M-40 812c274-72 506-62 696 30 132 64 254 86 366 68 178-28 336-112 530-52 134 42 264 92 408 120v102H-40Z" fill="#6fba2c"/>
+  </g>
+
+  <g transform="translate(264 550)" opacity="0.9">
+    <use href="#tree" fill="#82d5bb"/>
+    <rect x="-11" y="172" width="22" height="94" rx="11" fill="#9a835a"/>
+    <path d="M-58 132c36 24 76 26 120 2" fill="none" stroke="#50b9ab" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(450 600) scale(.72)" opacity="0.92">
+    <use href="#tree" fill="#d1da49"/>
+    <rect x="-10" y="172" width="20" height="90" rx="10" fill="#9a835a"/>
+  </g>
+  <g transform="translate(1540 568) scale(.86)" opacity="0.88">
+    <use href="#tree" fill="#8ac68a"/>
+    <rect x="-10" y="172" width="20" height="90" rx="10" fill="#9a835a"/>
+  </g>
+  <g transform="translate(1690 626) scale(.58)" opacity="0.9">
+    <use href="#tree" fill="#82d5bb"/>
+    <rect x="-10" y="172" width="20" height="90" rx="10" fill="#9a835a"/>
+  </g>
+
+  <g transform="translate(900 410)" opacity="0.9">
+    <path d="M-148 86c28-90 94-143 184-147 78-3 144 34 182 103 65 2 120 48 138 112H-220c12-32 36-56 72-68Z" fill="#f7f3df" stroke="#d8c9ad" stroke-width="8"/>
+    <path d="M-116 84c44-58 106-82 186-72M78 12c42 12 76 39 102 82" fill="none" stroke="#bdaea0" stroke-width="7" stroke-linecap="round" opacity="0.72"/>
+    <circle cx="-48" cy="84" r="16" fill="#f8a6b2"/>
+    <circle cx="82" cy="78" r="16" fill="#82d5bb"/>
+    <path d="M-10 84c18 20 38 20 60 0" fill="none" stroke="#725d42" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <g opacity="0.84">
+    <path d="M0 905c132 36 242 36 330 0s176-36 264 0 176 36 264 0 176-36 264 0 176 36 264 0 176-36 264 0 176 36 270 0v175H0Z" fill="url(#water)"/>
+    <path d="M0 922c132 36 242 36 330 0s176-36 264 0 176 36 264 0 176-36 264 0 176 36 264 0 176-36 264 0 176 36 270 0" fill="none" stroke="#fff9e3" stroke-width="10" stroke-linecap="round" opacity="0.72"/>
+    <path d="M0 994c136 24 272 24 408 0s272-24 408 0 272 24 408 0 272-24 408 0 192 22 288 6" fill="none" stroke="#327a93" stroke-width="10" stroke-linecap="round" opacity="0.36"/>
+  </g>
+
+  <g fill="#f7cd67" opacity="0.82">
+    <path d="M250 222c38-32 76-28 104 14-39 33-80 28-104-14Z"/>
+    <path d="M1290 292c26-22 54-19 74 10-28 24-56 20-74-10Z"/>
+    <path d="M1130 166c20-18 42-16 58 8-21 18-44 16-58-8Z"/>
+  </g>
+  <g fill="none" stroke="#725d42" stroke-linecap="round" opacity="0.16">
+    <path d="M112 212c116-42 228-50 336-24"/>
+    <path d="M1188 220c78-26 158-26 240 0"/>
+    <path d="M742 754c122 34 240 30 354-12"/>
+  </g>
+</svg>

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" role="img" aria-labelledby="title desc">
+  <title id="title">Animal island river mobile wallpaper</title>
+  <desc id="desc">A portrait animal-island wallpaper with a winding mint river, rounded hills, fruit trees, and floating leaves.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff9e3"/>
+      <stop offset="0.62" stop-color="#f8f8f0"/>
+      <stop offset="1" stop-color="#d6f0d4"/>
+    </linearGradient>
+    <linearGradient id="river" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#98d2e3"/>
+      <stop offset="0.5" stop-color="#19c8b9"/>
+      <stop offset="1" stop-color="#327a93"/>
+    </linearGradient>
+    <filter id="paperNoise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="4" seed="42"/>
+      <feColorMatrix type="saturate" values="0.38"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.12"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+    <pattern id="softDots" width="120" height="120" patternUnits="userSpaceOnUse">
+      <circle cx="22" cy="40" r="4" fill="#f7cd67" opacity="0.16"/>
+      <circle cx="84" cy="74" r="3" fill="#19c8b9" opacity="0.13"/>
+      <path d="M46 92c18-13 35-10 48 5-18 13-36 11-48-5Z" fill="#6fba2c" opacity="0.1"/>
+    </pattern>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#sky)" filter="url(#paperNoise)"/>
+  <rect width="1080" height="1920" fill="url(#softDots)"/>
+  <circle cx="282" cy="226" r="122" fill="#f7cd67" opacity="0.48"/>
+  <path d="M-50 1058c154-92 292-112 414-60 112 48 236 48 372 0 152-54 286-20 402 102v820H-50Z" fill="#bde5bb"/>
+  <path d="M-50 1256c190-68 348-46 474 66 112 99 254 104 426 14 116-61 212-66 288-16v600H-50Z" fill="#8ac68a"/>
+  <path d="M644-40c-122 212-106 400 48 564 132 141 124 294-24 460-100 112-114 248-42 408 66 147 46 322-60 528h258c118-194 138-368 60-522-70-138-46-270 72-396 166-178 178-366 36-564-118-165-92-324 78-478Z" fill="url(#river)" opacity="0.86"/>
+  <path d="M724 22c-84 144-54 286 90 426 112 109 86 242-78 399-86 82-108 184-66 305 52 149 30 318-66 506" fill="none" stroke="#fff9e3" stroke-width="12" stroke-linecap="round" opacity="0.58"/>
+  <g transform="translate(206 960)">
+    <rect x="-13" y="116" width="26" height="120" rx="13" fill="#9a835a"/>
+    <circle cx="0" cy="62" r="78" fill="#82d5bb"/>
+    <circle cx="-44" cy="86" r="38" fill="#8ac68a"/>
+    <circle cx="46" cy="92" r="44" fill="#d1da49"/>
+    <circle cx="-24" cy="40" r="9" fill="#f7cd67" stroke="#725d42" stroke-width="4"/>
+  </g>
+  <g transform="translate(870 980) scale(.82)">
+    <rect x="-13" y="116" width="26" height="120" rx="13" fill="#9a835a"/>
+    <circle cx="0" cy="62" r="78" fill="#82d5bb"/>
+    <circle cx="-44" cy="86" r="38" fill="#8ac68a"/>
+    <circle cx="46" cy="92" r="44" fill="#d1da49"/>
+    <circle cx="-30" cy="80" r="9" fill="#fc736d" stroke="#725d42" stroke-width="4"/>
+  </g>
+  <g fill="none" stroke="#725d42" stroke-linecap="round" opacity="0.18">
+    <path d="M84 322c104-38 212-42 324-12"/>
+    <path d="M656 398c140-42 282-36 426 18"/>
+    <path d="M134 1514c186 34 376 30 570-12"/>
+  </g>
+</svg>

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" role="img" aria-labelledby="title desc">
+  <title id="title">Animal island friends mobile wallpaper</title>
+  <desc id="desc">A portrait animal-island wallpaper with village hills, a pond, trees, and small animal friends arranged for mobile screens.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff9e3"/>
+      <stop offset="0.58" stop-color="#f8f8f0"/>
+      <stop offset="1" stop-color="#d6f0d4"/>
+    </linearGradient>
+    <linearGradient id="pond" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#98d2e3"/>
+      <stop offset="0.58" stop-color="#82d5bb"/>
+      <stop offset="1" stop-color="#327a93"/>
+    </linearGradient>
+    <filter id="paperNoise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="4" seed="118"/>
+      <feColorMatrix type="saturate" values="0.36"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.11"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+    <pattern id="petals" width="132" height="132" patternUnits="userSpaceOnUse">
+      <path d="M34 28c20-15 40-10 52 8-20 16-40 12-52-8Z" fill="#19c8b9" opacity="0.08"/>
+      <circle cx="102" cy="88" r="5" fill="#f7cd67" opacity="0.16"/>
+      <circle cx="28" cy="100" r="4" fill="#f8a6b2" opacity="0.14"/>
+    </pattern>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#sky)" filter="url(#paperNoise)"/>
+  <rect width="1080" height="1920" fill="url(#petals)"/>
+  <circle cx="818" cy="236" r="132" fill="#f7cd67" opacity="0.5"/>
+  <path d="M-50 1048c154-96 310-118 468-66 112 37 226 42 342 14 132-32 256-4 372 86v838H-50Z" fill="#bde5bb"/>
+  <path d="M-50 1268c174-72 334-56 480 48 116 82 250 82 402 0 120-65 220-58 300 20v584H-50Z" fill="#8ac68a"/>
+  <ellipse cx="692" cy="1378" rx="262" ry="88" fill="url(#pond)" opacity="0.84"/>
+  <path d="M494 1372c94 32 190 32 288 0 54-18 102-20 144-6" fill="none" stroke="#fff9e3" stroke-width="10" stroke-linecap="round" opacity="0.62"/>
+  <g transform="translate(176 1036)">
+    <rect x="-12" y="124" width="24" height="104" rx="12" fill="#9a835a"/>
+    <circle cx="0" cy="60" r="78" fill="#82d5bb"/>
+    <circle cx="-40" cy="88" r="42" fill="#8ac68a"/>
+    <circle cx="46" cy="86" r="44" fill="#d1da49"/>
+    <circle cx="-24" cy="48" r="9" fill="#f7cd67" stroke="#725d42" stroke-width="4"/>
+    <circle cx="36" cy="72" r="9" fill="#fc736d" stroke="#725d42" stroke-width="4"/>
+  </g>
+  <g transform="translate(904 1064) scale(.72)">
+    <rect x="-12" y="124" width="24" height="104" rx="12" fill="#9a835a"/>
+    <circle cx="0" cy="60" r="78" fill="#82d5bb"/>
+    <circle cx="-40" cy="88" r="42" fill="#8ac68a"/>
+    <circle cx="46" cy="86" r="44" fill="#d1da49"/>
+  </g>
+  <g transform="translate(318 1260) scale(.88)">
+    <ellipse cx="0" cy="76" rx="58" ry="14" fill="#3d3028" opacity="0.16"/>
+    <ellipse cx="0" cy="36" rx="48" ry="52" fill="#f7cd67" stroke="#725d42" stroke-width="7"/>
+    <path d="M-38 2-24-34-2-4ZM38 2 24-34 2-4Z" fill="#f7cd67" stroke="#725d42" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="-16" cy="26" r="5" fill="#725d42"/>
+    <circle cx="16" cy="26" r="5" fill="#725d42"/>
+    <path d="M-4 42h8M0 42c-8 12-18 14-28 4M0 42c8 12 18 14 28 4" fill="none" stroke="#725d42" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(528 1248) scale(.88)">
+    <ellipse cx="0" cy="84" rx="66" ry="16" fill="#3d3028" opacity="0.16"/>
+    <ellipse cx="0" cy="42" rx="54" ry="50" fill="#e18c6f" stroke="#725d42" stroke-width="7"/>
+    <ellipse cx="-44" cy="32" rx="20" ry="36" fill="#9a835a" stroke="#725d42" stroke-width="7" transform="rotate(18 -44 32)"/>
+    <ellipse cx="44" cy="32" rx="20" ry="36" fill="#9a835a" stroke="#725d42" stroke-width="7" transform="rotate(-18 44 32)"/>
+    <circle cx="-18" cy="34" r="5" fill="#725d42"/>
+    <circle cx="18" cy="34" r="5" fill="#725d42"/>
+    <ellipse cx="0" cy="52" rx="16" ry="12" fill="#fff9e3" stroke="#725d42" stroke-width="5"/>
+  </g>
+  <g transform="translate(728 1260) scale(.86)">
+    <ellipse cx="0" cy="80" rx="54" ry="13" fill="#3d3028" opacity="0.14"/>
+    <ellipse cx="0" cy="42" rx="44" ry="48" fill="#f7f3df" stroke="#725d42" stroke-width="7"/>
+    <ellipse cx="-22" cy="-8" rx="14" ry="44" fill="#f7f3df" stroke="#725d42" stroke-width="7" transform="rotate(-12 -22 -8)"/>
+    <ellipse cx="22" cy="-8" rx="14" ry="44" fill="#f7f3df" stroke="#725d42" stroke-width="7" transform="rotate(12 22 -8)"/>
+    <circle cx="-14" cy="36" r="5" fill="#725d42"/>
+    <circle cx="14" cy="36" r="5" fill="#725d42"/>
+  </g>
+  <g transform="translate(790 1452) scale(.86)">
+    <ellipse cx="0" cy="58" rx="52" ry="13" fill="#3d3028" opacity="0.13"/>
+    <ellipse cx="0" cy="28" rx="46" ry="38" fill="#f7cd67" stroke="#725d42" stroke-width="7"/>
+    <circle cx="-12" cy="22" r="5" fill="#725d42"/>
+    <path d="M24 32c28-12 50-6 62 12-24 17-48 13-62-12Z" fill="#e59266" stroke="#725d42" stroke-width="7" stroke-linejoin="round"/>
+  </g>
+  <g fill="none" stroke="#725d42" stroke-linecap="round" opacity="0.16">
+    <path d="M92 344c118-40 238-44 360-12"/>
+    <path d="M556 512c128-34 258-30 390 12"/>
+    <path d="M238 1588c170 34 342 30 516-10"/>
+  </g>
+</svg>
