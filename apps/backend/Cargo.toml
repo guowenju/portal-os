@@ -19,6 +19,13 @@ rust-embed = { workspace = true }
 mime_guess = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 reqwest = { workspace = true, features = ["json", "rustls-tls"] }
+toasty = { workspace = true, features = ["sqlite"] }
+toasty-driver-sqlite = { workspace = true }
+argon2 = { workspace = true }
+rand = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+dotenvy = { workspace = true }
 
 
 [build-dependencies]

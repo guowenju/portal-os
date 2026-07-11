@@ -41,9 +41,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY --from=server-builder /workspace/target/release/portal-os /usr/local/bin/portal-os
-RUN mkdir -p /app/content/docs
+RUN mkdir -p /app/data
 
 ENV RUST_LOG=info
+ENV PORTAL_OS_DATA_DIR=/app/data
 
 EXPOSE 9090
 

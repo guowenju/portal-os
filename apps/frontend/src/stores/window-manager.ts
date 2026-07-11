@@ -73,7 +73,7 @@ const DESKTOP_ICON_HEIGHT = 88
 const DESKTOP_GRID_COLUMN_WIDTH = 110
 const DESKTOP_GRID_ROW_HEIGHT = 110
 const DESKTOP_GRID_PADDING = 20
-const defaultDesktopApps: AppId[] = ['settings', 'docs']
+const defaultDesktopApps: AppId[] = ['settings', 'blog']
 const defaultOpenApps: AppId[] = []
 
 function calculateCenteredX(windowWidth: number): number {

@@ -4,23 +4,16 @@ use crate::apps;
 use crate::services::static_handler::fallback_handler;
 use anyhow::Result;
 use axum::extract::connect_info::ConnectInfo;
-use axum::{
-    Router,
-    body::Body,
-    extract::DefaultBodyLimit,
-    http::{Method, Request},
-};
+use axum::{Router, body::Body, extract::DefaultBodyLimit, http::Request};
 use std::net::SocketAddr;
-use tower_http::cors::{Any, CorsLayer};
+use toasty::Db;
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, OnRequest, TraceLayer};
 use tracing::{Level, info_span};
 
 /// 创建公开 API 路由。
 fn public_api_router() -> Result<Router> {
-    Ok(Router::new()
-        .merge(apps::docs::router()?)
-        .merge(apps::weather::router()))
+    Ok(Router::new().merge(apps::weather::router()))
 }
 
 fn on_request_log(req: &Request<Body>, span: &tracing::Span) {
@@ -30,15 +23,19 @@ fn on_request_log(req: &Request<Body>, span: &tracing::Span) {
 }
 
 /// 创建公开站点主路由。
-pub async fn create_router() -> Result<Router> {
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_headers(Any);
+pub async fn create_router(database: Db) -> Result<Router> {
+    let repository = crate::persistence::repository::Repository::new(database);
+    apps::admin::ensure_admin(&repository).await?;
+    let admin_state = apps::admin::AdminState { repository };
 
     let router = Router::new()
         .nest("/api/v1", public_api_router()?)
-        .layer(cors)
+        .nest(
+            "/api/v1",
+            apps::admin::router()
+                .merge(apps::blog::router())
+                .with_state(admin_state),
+        )
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {

@@ -33,15 +33,26 @@ export const appRegistry = {
     defaultWidth: 920,
     defaultHeight: 620,
   },
-  docs: {
-    component: lazy(() => import('@/apps/pages/DocsPage')),
-    title: '文档',
-    i18nTitleKey: 'app.docs.appName',
-    icon: <PortalIcon name="docs" size={42} />,
+  blog: {
+    component: lazy(() => import('@/apps/pages/BlogPage')),
+    title: '岛屿手账',
+    i18nTitleKey: 'app.blog.appName',
+    icon: <PortalIcon name="blog" size={42} />,
     minWidth: 540,
     minHeight: 420,
     defaultWidth: 980,
     defaultHeight: 680,
+  },
+  admin: {
+    component: lazy(() => import('@/apps/pages/AdminPage')),
+    title: '岛务管理',
+    i18nTitleKey: 'app.admin.appName',
+    icon: <PortalIcon name="admin" size={42} />,
+    minWidth: 720,
+    minHeight: 520,
+    defaultWidth: 1100,
+    defaultHeight: 760,
+    hidden: true,
   },
 } satisfies Record<string, AppConfig>
 

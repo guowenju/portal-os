@@ -20,8 +20,6 @@ const config = {
  */
 class HttpClient {
   service: AxiosInstance
-  private isRefreshing = false
-  private refreshPromise: Promise<void> | null = null
   /**
    * @description 构造函数，创建 Axios 实例并配置拦截器
    * @param config - AxiosRequestConfig 配置对象
@@ -39,17 +37,6 @@ class HttpClient {
           const { response, config } = error
 
           if (response && response.status === HttpStatusCode.Unauthorized && config) {
-            const requestUrl = config.url || ''
-            const isAuthEndpoint =
-              requestUrl.includes('/auth/login') || requestUrl.includes('/auth/refresh')
-            if (!isAuthEndpoint) {
-              try {
-                await this.refreshToken()
-                return this.service.request(config)
-              } catch {
-                return response.data
-              }
-            }
             return response.data
           }
 
@@ -64,41 +51,20 @@ class HttpClient {
     )
   }
 
-  private async refreshToken(): Promise<void> {
-    if (this.isRefreshing && this.refreshPromise) {
-      return this.refreshPromise
-    }
-
-    const refreshToken = localStorage.getItem('refreshToken')
-    if (!refreshToken) {
-      return Promise.reject(new Error('Refresh token missing'))
-    }
-
-    this.isRefreshing = true
-    this.refreshPromise = this.post<unknown>('/auth/refresh', { refreshToken })
-      .then((res) => {
-        if (!res.success) {
-          throw new Error(res.message || 'Refresh failed')
-        }
-      })
-      .finally(() => {
-        this.isRefreshing = false
-        this.refreshPromise = null
-      })
-
-    return this.refreshPromise
-  }
-
   get<T>(url: string, params?: object, _object = {}): Promise<ApiResponse<T>> {
     return this.service.get(url, { params, ..._object })
   }
   post<T>(url: string, params?: object, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     return this.service.post(url, params, config)
   }
-  put<T>(url: string, params?: object, _object = {}): Promise<ApiResponse<T>> {
+  put<T>(url: string, params?: object, _object: AxiosRequestConfig = {}): Promise<ApiResponse<T>> {
     return this.service.put(url, params, _object)
   }
-  delete<T>(url: string, params?: object, _object = {}): Promise<ApiResponse<T>> {
+  delete<T>(
+    url: string,
+    params?: object,
+    _object: AxiosRequestConfig = {},
+  ): Promise<ApiResponse<T>> {
     return this.service.delete(url, { params, ..._object })
   }
   download<BlobPart>(url: string, params?: object, _object = {}): Promise<BlobPart> {

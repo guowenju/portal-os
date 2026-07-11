@@ -35,6 +35,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<DesktopLayout />}>
             <Route index element={<DesktopPage />} />
+            <Route path="admin" element={<DesktopPage initialApp="admin" />} />
           </Route>
         </Routes>
       </Suspense>

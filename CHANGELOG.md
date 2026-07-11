@@ -2,6 +2,18 @@
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，并遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.1.0-alpha.2] - 2026-07-11
+
+### 新增
+
+- 新增 SQLite 岛屿博客与单管理员岛务后台，支持草稿、预览、发布和回收站。
+- 新增服务端管理员会话、首次启动账号配置、分类和标签管理。
+
+### 变更
+
+- 以博客应用完整替代原有本地文档应用。
+- 强化 Animal Island UI 视觉、响应式和无障碍规范。
+
 ## [0.1.0-alpha.1] - 2026-06-30
 
 ### 新增

@@ -9,6 +9,7 @@ use tracing_subscriber::{fmt::time::ChronoLocal, layer::SubscriberExt, util::Sub
 
 pub mod api;
 pub mod apps;
+pub mod persistence;
 pub mod services;
 
 shadow!(build);
@@ -52,11 +53,21 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
+    // 本地开发时从工作目录加载 .env；已有进程环境变量不会被覆盖。
+    dotenvy::dotenv().ok();
     init_logging();
     let args = Cli::parse();
     tracing::debug!("Successfully parsed command-line arguments: {:?}", args);
 
-    let app = match create_router().await {
+    let database = match persistence::open_database().await {
+        Ok(database) => database,
+        Err(err) => {
+            tracing::error!("初始化数据库失败：{:?}", err);
+            std::process::exit(1);
+        }
+    };
+
+    let app = match create_router(database).await {
         Ok(app) => app,
         Err(err) => {
             tracing::error!("创建公开站点路由失败：{:?}", err);

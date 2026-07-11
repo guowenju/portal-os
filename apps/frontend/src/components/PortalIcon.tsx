@@ -9,7 +9,8 @@ export type PortalIconName =
   | 'add-to-desktop'
   | 'app-details'
   | 'settings'
-  | 'docs'
+  | 'blog'
+  | 'admin'
 
 interface PortalIconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: PortalIconName
@@ -76,8 +77,10 @@ function renderIcon(name: PortalIconName) {
       return <AppDetailsIcon />
     case 'settings':
       return <SettingsIcon />
-    case 'docs':
-      return <DocsIcon />
+    case 'blog':
+      return <BlogIcon />
+    case 'admin':
+      return <AppDetailsIcon />
   }
 }
 
@@ -285,7 +288,7 @@ function SettingsIcon() {
   )
 }
 
-function DocsIcon() {
+function BlogIcon() {
   return (
     <>
       <path

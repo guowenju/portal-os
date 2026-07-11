@@ -11,9 +11,10 @@ import type { AppId } from '@/apps/registry'
 /**
  * @description 桌面背景视图，包含应用图标和所有活动窗口。
  */
-export default function DesktopPage() {
+export default function DesktopPage({ initialApp }: { initialApp?: AppId }) {
   const { t } = useTranslation()
   const store = useWindowManagerStore()
+  const openWindow = store.openWindow
   const isMobileViewport = useMobileViewport()
   const initializeWeather = useWeatherStore((state) => state.initializeWeather)
   const iconLayerRef = useRef<HTMLDivElement | null>(null)
@@ -121,6 +122,10 @@ export default function DesktopPage() {
   useEffect(() => {
     void initializeWeather()
   }, [initializeWeather])
+
+  useEffect(() => {
+    if (initialApp) openWindow(initialApp)
+  }, [initialApp, openWindow])
 
   return (
     <div className="app-desktop-container">
