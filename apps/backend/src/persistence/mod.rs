@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use std::{env, path::PathBuf};
 use toasty::Db;
 
-/// 打开 alpha.2 SQLite 数据库并确保模型结构存在。
+/// 打开 SQLite 数据库并在首次启动时初始化数据结构。
 pub async fn open_database() -> Result<Db> {
     let data_dir = env::var_os("PORTAL_OS_DATA_DIR")
         .map(PathBuf::from)
@@ -22,28 +22,30 @@ pub async fn open_database() -> Result<Db> {
         models::Article,
         models::Category,
         models::Tag,
-        models::ArticleCategory,
         models::ArticleTag,
         models::ArticleSlugHistory,
+        models::MediaAsset,
+        models::ArticleMedia,
+        models::SiteSettings,
     ));
     let mut db = builder
         .build(toasty_driver_sqlite::Sqlite::open(&database_path))
         .await
         .context("连接 SQLite 数据库失败")?;
     if is_new_database {
-        db.push_schema()
-            .await
-            .context("初始化 alpha.2 数据结构失败")?;
-    }
-
-    for statement in [
-        "CREATE TABLE IF NOT EXISTS portal_schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)",
-        "INSERT OR IGNORE INTO portal_schema_migrations (version, applied_at) VALUES (1, CURRENT_TIMESTAMP)",
-    ] {
-        toasty::sql::statement(statement)
+        db.push_schema().await.context("初始化数据库结构失败")?;
+        let now = chrono::Utc::now().to_rfc3339();
+        models::SiteSettings::create()
+            .id(1)
+            .site_name("PortalOS")
+            .site_description("动物森林桌面博客")
+            .author_name("")
+            .site_url("")
+            .updated_at(now)
+            .version(1)
             .exec(&mut db)
             .await
-            .with_context(|| format!("执行 SQLite 初始化语句失败：{statement}"))?;
+            .context("初始化站点设置失败")?;
     }
     for pragma in [
         "PRAGMA foreign_keys = ON",

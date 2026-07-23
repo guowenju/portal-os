@@ -143,12 +143,13 @@ async fn login(
         },
     ))
     .into_response();
+    let secure = request_is_secure(&headers);
     response
         .headers_mut()
-        .append(header::SET_COOKIE, session_cookie(&token));
+        .append(header::SET_COOKIE, session_cookie(&token, secure));
     response
         .headers_mut()
-        .append(header::SET_COOKIE, csrf_cookie(&csrf));
+        .append(header::SET_COOKIE, csrf_cookie(&csrf, secure));
     Ok(response)
 }
 
@@ -326,17 +327,30 @@ fn cookie_value(headers: &HeaderMap, name: &str) -> Option<String> {
             (key == name).then(|| value.to_string())
         })
 }
-fn session_cookie(token: &str) -> HeaderValue {
+fn session_cookie(token: &str, secure: bool) -> HeaderValue {
+    let secure = if secure { "; Secure" } else { "" };
     HeaderValue::from_str(&format!(
-        "{SESSION_COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800"
+        "{SESSION_COOKIE}={token}; Path=/; HttpOnly{secure}; SameSite=Lax; Max-Age=604800"
     ))
     .expect("会话 Cookie 内容必须有效")
 }
-fn csrf_cookie(token: &str) -> HeaderValue {
+fn csrf_cookie(token: &str, secure: bool) -> HeaderValue {
+    let secure = if secure { "; Secure" } else { "" };
     HeaderValue::from_str(&format!(
-        "portal_admin_csrf={token}; Path=/; Secure; SameSite=Lax; Max-Age=604800"
+        "portal_admin_csrf={token}; Path=/{secure}; SameSite=Lax; Max-Age=604800"
     ))
     .expect("CSRF Cookie 内容必须有效")
+}
+
+fn request_is_secure(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-forwarded-proto")
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.eq_ignore_ascii_case("https"))
+        || headers
+            .get(header::ORIGIN)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.starts_with("https://"))
 }
 fn enforce_login_limit(client: &str) -> Result<(), ApiError> {
     let mut failures = LOGIN_FAILURES

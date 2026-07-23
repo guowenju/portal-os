@@ -1,4 +1,4 @@
-//! 博客持久化模型：定义 alpha.2 全新 SQLite 数据结构。
+//! 博客持久化模型：定义文章、分类、标签、媒体与站点设置。
 
 /// 管理员账户。
 #[derive(Debug, Clone, toasty::Model)]
@@ -40,6 +40,12 @@ pub struct Article {
     pub slug: String,
     pub summary: String,
     pub markdown: String,
+    pub category_id: Option<u64>,
+    #[belongs_to(key = category_id, references = id)]
+    pub category: toasty::Deferred<Option<Category>>,
+    pub cover_media_id: Option<u64>,
+    #[belongs_to(key = cover_media_id, references = id)]
+    pub cover_media: toasty::Deferred<Option<MediaAsset>>,
     #[index]
     pub status: String,
     pub published_at: Option<String>,
@@ -75,19 +81,6 @@ pub struct Tag {
     pub sort_order: i64,
 }
 
-/// 文章与分类关联。
-#[derive(Debug, Clone, toasty::Model)]
-pub struct ArticleCategory {
-    #[key]
-    pub article_id: u64,
-    #[belongs_to(key = article_id, references = id)]
-    pub article: toasty::Deferred<Article>,
-    #[key]
-    pub category_id: u64,
-    #[belongs_to(key = category_id, references = id)]
-    pub category: toasty::Deferred<Category>,
-}
-
 /// 文章与标签关联。
 #[derive(Debug, Clone, toasty::Model)]
 pub struct ArticleTag {
@@ -110,4 +103,47 @@ pub struct ArticleSlugHistory {
     pub article_id: u64,
     #[belongs_to(key = article_id, references = id)]
     pub article: toasty::Deferred<Article>,
+}
+
+/// 博客图片资源。
+#[derive(Debug, Clone, toasty::Model)]
+pub struct MediaAsset {
+    #[key]
+    #[auto]
+    pub id: u64,
+    pub original_name: String,
+    #[unique]
+    pub storage_key: String,
+    pub mime_type: String,
+    pub byte_size: u64,
+    pub created_at: String,
+}
+
+/// 文章正文引用的图片。
+#[derive(Debug, Clone, toasty::Model)]
+pub struct ArticleMedia {
+    #[key]
+    pub article_id: u64,
+    #[belongs_to(key = article_id, references = id)]
+    pub article: toasty::Deferred<Article>,
+    #[key]
+    pub media_id: u64,
+    #[belongs_to(key = media_id, references = id)]
+    pub media: toasty::Deferred<MediaAsset>,
+}
+
+/// 单例站点设置。
+#[derive(Debug, Clone, toasty::Model)]
+pub struct SiteSettings {
+    #[key]
+    pub id: u64,
+    pub site_name: String,
+    pub site_description: String,
+    pub author_name: String,
+    pub site_url: String,
+    pub default_share_image_id: Option<u64>,
+    #[belongs_to(key = default_share_image_id, references = id)]
+    pub default_share_image: toasty::Deferred<Option<MediaAsset>>,
+    pub updated_at: String,
+    pub version: u64,
 }

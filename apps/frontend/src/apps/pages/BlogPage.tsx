@@ -1,163 +1,365 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Input, Tag } from 'animal-island-ui'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Button, Card, Input, Select, Tag } from 'animal-island-ui'
 import { useTranslation } from 'react-i18next'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import http from '@/api'
-import { renderMarkdown } from '@/utils/markdown'
+import { renderMarkdownDocument } from '@/utils/markdown'
+import type { AppViewProps } from '@/apps/registry'
 
-interface Article {
-  id: number
-  title: string
-  slug: string
-  summary: string
-  markdown: string
-  publishedAt?: string
-  categoryIds: number[]
-  tagIds: number[]
-}
-interface PageData {
-  items: Article[]
-  total: number
-  page: number
-  pageSize: number
-}
 interface TaxonomyItem {
   id: number
   name: string
   slug: string
+  sortOrder: number
 }
+
+interface ArticleSummary {
+  id: number
+  title: string
+  slug: string
+  summary: string
+  coverImageUrl?: string
+  publishedAt?: string
+  updatedAt: string
+  readingMinutes: number
+  category?: TaxonomyItem
+  tags: TaxonomyItem[]
+}
+
+interface ArticleLink {
+  title: string
+  slug: string
+}
+
+interface ArticleDetail extends ArticleSummary {
+  markdown: string
+  previous?: ArticleLink
+  next?: ArticleLink
+}
+
+interface PageData {
+  items: ArticleSummary[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 interface Taxonomy {
   categories: TaxonomyItem[]
   tags: TaxonomyItem[]
 }
 
-/**
- * @description 公开博客应用，提供文章浏览、筛选和安全 Markdown 阅读。
- */
-export default function BlogPage() {
-  const { t } = useTranslation()
-  const [articles, setArticles] = useState<Article[]>([])
+function bootstrapArticle(slug?: string): ArticleDetail | null {
+  const node = document.getElementById('portal-article-data')
+  if (!node?.textContent) return null
+  try {
+    const article = JSON.parse(node.textContent) as ArticleDetail
+    article.tags ??= []
+    article.readingMinutes ??= 1
+    return !slug || article.slug === slug ? article : null
+  } catch {
+    return null
+  }
+}
+
+/** 公开博客应用，以 URL 作为文章、筛选与分页状态的唯一来源。 */
+export default function BlogPage({ payload }: AppViewProps) {
+  const { t, i18n } = useTranslation()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const routeSlug = decodeURIComponent(location.pathname.match(/^\/blog\/(.+)$/)?.[1] ?? '')
+  const initialSlug = routeSlug || (typeof payload?.slug === 'string' ? payload.slug : '')
+  const [articles, setArticles] = useState<ArticleSummary[]>([])
   const [taxonomy, setTaxonomy] = useState<Taxonomy>({ categories: [], tags: [] })
-  const [selected, setSelected] = useState<Article | null>(null)
-  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<ArticleDetail | null>(() =>
+    bootstrapArticle(initialSlug),
+  )
+  const [query, setQuery] = useState(searchParams.get('q') ?? '')
   const [loading, setLoading] = useState(true)
+  const [articleLoading, setArticleLoading] = useState(Boolean(initialSlug && !selected))
   const [error, setError] = useState('')
-  const html = useMemo(
-    () => renderMarkdown(selected?.markdown ?? '', { copyCodeLabel: t('app.blog.copyCode') }),
-    [selected, t],
+  const listScrollRef = useRef<HTMLDivElement | null>(null)
+  const category = searchParams.get('category') ?? ''
+  const tag = searchParams.get('tag') ?? ''
+  const page = Math.max(1, Number(searchParams.get('page') ?? 1))
+
+  const renderedDocument = useMemo(
+    () =>
+      renderMarkdownDocument(selected?.markdown ?? '', {
+        copyCodeLabel: t('app.blog.copyCode'),
+      }),
+    [selected?.markdown, t],
   )
 
-  const loadTaxonomy = useCallback(async () => {
-    const response = await http.get<Taxonomy>('/blog/taxonomy')
-    if (response.success && response.data) setTaxonomy(response.data)
+  const updateSearch = useCallback(
+    (changes: Record<string, string>) => {
+      const next = new URLSearchParams(searchParams)
+      Object.entries(changes).forEach(([key, value]) => {
+        if (value) next.set(key, value)
+        else next.delete(key)
+      })
+      if (!Object.hasOwn(changes, 'page')) next.delete('page')
+      setSearchParams(next)
+    },
+    [searchParams, setSearchParams],
+  )
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (query !== (searchParams.get('q') ?? '')) updateSearch({ q: query })
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [query, searchParams, updateSearch])
+
+  useEffect(() => {
+    void http.get<Taxonomy>('/blog/taxonomy').then((response) => {
+      if (response.success && response.data) setTaxonomy(response.data)
+    })
   }, [])
-  const openArticle = useCallback(async (slug: string) => {
-    const response = await http.get<Article>(`/blog/articles/${encodeURIComponent(slug)}`)
-    if (response.success && response.data) setSelected(response.data)
-  }, [])
+
   const loadArticles = useCallback(async () => {
     setLoading(true)
     setError('')
-    try {
-      const response = await http.get<PageData>('/blog/articles', { q: query, pageSize: 50 })
-      if (!response.success || !response.data) throw new Error(response.message)
-      setArticles(response.data.items)
-      if (!selected && response.data.items[0]) await openArticle(response.data.items[0].slug)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t('app.blog.error'))
-    } finally {
-      setLoading(false)
-    }
-  }, [openArticle, query, selected, t])
+    const response = await http.get<PageData>('/blog/articles', {
+      q: searchParams.get('q') || undefined,
+      category: category || undefined,
+      tag: tag || undefined,
+      page,
+      pageSize: 12,
+    })
+    if (response.success && response.data) setArticles(response.data.items)
+    else setError(response.message || t('app.blog.error'))
+    setLoading(false)
+    return response.data
+  }, [category, page, searchParams, t, tag])
+
+  const [pageData, setPageData] = useState<PageData | null>(null)
   useEffect(() => {
-    const timer = window.setTimeout(() => void loadTaxonomy(), 0)
-    return () => window.clearTimeout(timer)
-  }, [loadTaxonomy])
-  useEffect(() => {
-    const timer = window.setTimeout(() => void loadArticles(), 250)
+    const timer = window.setTimeout(() => {
+      void loadArticles().then((data) => setPageData(data ?? null))
+    }, 0)
     return () => window.clearTimeout(timer)
   }, [loadArticles])
-  function nameFor(items: TaxonomyItem[], id: number) {
-    return items.find((item) => item.id === id)?.name
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!routeSlug) {
+        setSelected(null)
+        setArticleLoading(false)
+        return
+      }
+      const bootstrapped = bootstrapArticle(routeSlug)
+      if (bootstrapped) {
+        setSelected(bootstrapped)
+        setArticleLoading(false)
+      } else {
+        setArticleLoading(true)
+      }
+      void http
+        .get<ArticleDetail>(`/blog/articles/${encodeURIComponent(routeSlug)}`)
+        .then((response) => {
+          if (response.success && response.data) {
+            setSelected(response.data)
+            setError('')
+          } else {
+            setSelected(null)
+            setError(response.message || t('app.blog.notFound'))
+          }
+          setArticleLoading(false)
+        })
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [routeSlug, t])
+
+  useEffect(() => {
+    if (!selected) return
+    document.title = selected.title
+    const description = globalThis.document.querySelector<HTMLMetaElement>(
+      'meta[name="description"]',
+    )
+    if (description) description.content = selected.summary
+    return () => {
+      document.title = 'PortalOS'
+    }
+  }, [selected])
+
+  function openArticle(slug: string) {
+    sessionStorage.setItem('portal_blog_scroll', String(listScrollRef.current?.scrollTop ?? 0))
+    navigate({ pathname: `/blog/${encodeURIComponent(slug)}`, search: searchParams.toString() })
   }
 
+  function backToList() {
+    navigate({ pathname: '/blog', search: searchParams.toString() })
+    window.setTimeout(() => {
+      if (listScrollRef.current) {
+        listScrollRef.current.scrollTop = Number(sessionStorage.getItem('portal_blog_scroll') ?? 0)
+      }
+    }, 0)
+  }
+
+  const formatDate = (value?: string) =>
+    value
+      ? new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(new Date(value))
+      : ''
+
   return (
-    <section className={`blog-app ${selected ? 'reader-open' : ''}`}>
+    <section className={`blog-app ${routeSlug ? 'reader-open' : ''}`}>
       <aside className="blog-sidebar">
-        <Card title={t('app.blog.journalTitle')}>
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            allowClear
-            prefix="⌕"
-            placeholder={t('app.blog.searchPlaceholder')}
-          />
+        <Card>
+          <div className="blog-filters">
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              allowClear
+              prefix="⌕"
+              placeholder={t('app.blog.searchPlaceholder')}
+            />
+            <Select
+              value={category}
+              placeholder={t('app.blog.allCategories')}
+              options={[
+                { label: t('app.blog.allCategories'), key: '' },
+                ...taxonomy.categories.map((item) => ({
+                  label: item.name,
+                  key: String(item.id),
+                })),
+              ]}
+              onChange={(value) => updateSearch({ category: value })}
+            />
+            <Select
+              value={tag}
+              placeholder={t('app.blog.allTags')}
+              options={[
+                { label: t('app.blog.allTags'), key: '' },
+                ...taxonomy.tags.map((item) => ({ label: item.name, key: String(item.id) })),
+              ]}
+              onChange={(value) => updateSearch({ tag: value })}
+            />
+            {(query || category || tag) && (
+              <Button type="text" onClick={() => setSearchParams({})}>
+                {t('app.blog.clearFilters')}
+              </Button>
+            )}
+          </div>
         </Card>
-        <div className="blog-list" aria-live="polite">
-          {loading && (
+        <div ref={listScrollRef} className="blog-list" aria-live="polite">
+          {loading && <Card className="island-state">{t('app.blog.loading')}</Card>}
+          {!loading && error && !routeSlug && (
             <Card className="island-state">
-              <span className="island-state-icon">🌱</span>
-              {t('app.blog.loading')}
-            </Card>
-          )}
-          {!loading && error && (
-            <Card className="island-state">
-              <span className="island-state-icon">🍂</span>
               {error}
               <Button onClick={() => void loadArticles()}>{t('app.blog.retry')}</Button>
             </Card>
           )}
           {!loading && !error && articles.length === 0 && (
-            <Card className="island-state">
-              <span className="island-state-icon">🏝️</span>
-              {t('app.blog.empty')}
-            </Card>
+            <Card className="island-state">{t('app.blog.empty')}</Card>
           )}
           {!loading &&
             articles.map((article) => (
-              <Card
+              <button
                 key={article.id}
-                className={`blog-entry-card ${selected?.id === article.id ? 'active' : ''}`}
-                onClick={() => void openArticle(article.slug)}
+                type="button"
+                className={`blog-entry-button ${selected?.id === article.id ? 'active' : ''}`}
+                onClick={() => openArticle(article.slug)}
               >
-                <h3>{article.title}</h3>
-                <p>{article.summary}</p>
-                <div className="blog-entry-tags">
-                  {article.categoryIds
-                    .map((id) => nameFor(taxonomy.categories, id))
-                    .filter(Boolean)
-                    .map((name) => (
-                      <Tag key={name}>{name}</Tag>
-                    ))}
-                </div>
-              </Card>
+                {article.coverImageUrl && (
+                  <img src={article.coverImageUrl} alt="" className="blog-entry-cover" />
+                )}
+                <strong>{article.title}</strong>
+                <span>{article.summary}</span>
+                <small>
+                  {formatDate(article.publishedAt)} · {article.readingMinutes}{' '}
+                  {t('app.blog.minutes')}
+                </small>
+              </button>
             ))}
         </div>
+        {pageData && pageData.total > pageData.pageSize && (
+          <nav className="blog-pagination" aria-label={t('app.blog.pagination')}>
+            <Button
+              size="small"
+              disabled={page <= 1}
+              onClick={() => updateSearch({ page: String(page - 1) })}
+            >
+              ←
+            </Button>
+            <span>
+              {page} / {Math.ceil(pageData.total / pageData.pageSize)}
+            </span>
+            <Button
+              size="small"
+              disabled={page * pageData.pageSize >= pageData.total}
+              onClick={() => updateSearch({ page: String(page + 1) })}
+            >
+              →
+            </Button>
+          </nav>
+        )}
       </aside>
       <main className="blog-reader">
-        {selected ? (
+        {articleLoading ? (
+          <Card className="island-state island-state-large">{t('app.blog.loading')}</Card>
+        ) : selected ? (
           <article className="blog-article">
             <header>
-              <Button type="text" className="blog-mobile-back" onClick={() => setSelected(null)}>
+              <Button type="text" className="blog-mobile-back" onClick={backToList}>
                 ← {t('app.blog.back')}
               </Button>
               <p className="blog-eyebrow">{t('app.blog.islandJournal')}</p>
               <h1>{selected.title}</h1>
+              <p className="blog-article-meta">
+                {formatDate(selected.publishedAt)} · {selected.readingMinutes}{' '}
+                {t('app.blog.minutes')}
+              </p>
               <div className="blog-entry-tags">
-                {selected.tagIds
-                  .map((id) => nameFor(taxonomy.tags, id))
-                  .filter(Boolean)
-                  .map((name) => (
-                    <Tag key={name}>{name}</Tag>
-                  ))}
+                {selected.category && (
+                  <Tag onClick={() => updateSearch({ category: String(selected.category?.id) })}>
+                    {selected.category.name}
+                  </Tag>
+                )}
+                {selected.tags.map((item) => (
+                  <Tag key={item.id} onClick={() => updateSearch({ tag: String(item.id) })}>
+                    {item.name}
+                  </Tag>
+                ))}
               </div>
+              <Button
+                size="small"
+                onClick={() => void navigator.clipboard.writeText(window.location.href)}
+              >
+                {t('app.blog.copyLink')}
+              </Button>
             </header>
-            <div className="docs-markdown" dangerouslySetInnerHTML={{ __html: html }} />
+            {renderedDocument.headings.length > 0 && (
+              <nav className="blog-toc" aria-label={t('app.blog.toc')}>
+                {renderedDocument.headings.map((heading) => (
+                  <a key={heading.id} href={`#${heading.id}`} data-level={heading.level}>
+                    {heading.text}
+                  </a>
+                ))}
+              </nav>
+            )}
+            <div
+              className="docs-markdown"
+              dangerouslySetInnerHTML={{ __html: renderedDocument.html }}
+            />
+            <nav className="blog-neighbors" aria-label={t('app.blog.neighbors')}>
+              {selected.previous && (
+                <Button onClick={() => openArticle(selected.previous!.slug)}>
+                  ← {selected.previous.title}
+                </Button>
+              )}
+              {selected.next && (
+                <Button onClick={() => openArticle(selected.next!.slug)}>
+                  {selected.next.title} →
+                </Button>
+              )}
+            </nav>
           </article>
         ) : (
           <Card className="island-state island-state-large">
-            <span className="island-state-icon">📖</span>
-            <h2>{t('app.blog.chooseTitle')}</h2>
-            <p>{t('app.blog.chooseDescription')}</p>
+            <h2>{error ? t('app.blog.notFound') : t('app.blog.chooseTitle')}</h2>
+            <p>{error || t('app.blog.chooseDescription')}</p>
           </Card>
         )}
       </main>

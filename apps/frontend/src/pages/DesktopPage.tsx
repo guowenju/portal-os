@@ -11,10 +11,18 @@ import type { AppId } from '@/apps/registry'
 /**
  * @description 桌面背景视图，包含应用图标和所有活动窗口。
  */
-export default function DesktopPage({ initialApp }: { initialApp?: AppId }) {
+export default function DesktopPage({
+  initialApp,
+  initialPayload,
+  initialMaximized = false,
+}: {
+  initialApp?: AppId
+  initialPayload?: Record<string, unknown>
+  initialMaximized?: boolean
+}) {
   const { t } = useTranslation()
   const store = useWindowManagerStore()
-  const openWindow = store.openWindow
+  const openWindowWithPayload = store.openWindowWithPayload
   const isMobileViewport = useMobileViewport()
   const initializeWeather = useWeatherStore((state) => state.initializeWeather)
   const iconLayerRef = useRef<HTMLDivElement | null>(null)
@@ -124,8 +132,12 @@ export default function DesktopPage({ initialApp }: { initialApp?: AppId }) {
   }, [initializeWeather])
 
   useEffect(() => {
-    if (initialApp) openWindow(initialApp)
-  }, [initialApp, openWindow])
+    if (initialApp) {
+      openWindowWithPayload(initialApp, initialPayload, {
+        isMaximized: initialMaximized,
+      })
+    }
+  }, [initialApp, initialMaximized, initialPayload, openWindowWithPayload])
 
   return (
     <div className="app-desktop-container">

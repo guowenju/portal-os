@@ -1,7 +1,7 @@
 # PortalOS
 
 [![Project Status: Early Pre-release](https://img.shields.io/badge/Project%20Status-Early%20Pre--release-amber.svg)](https://github.com/guowenju/portal-os)
-[![Version: 0.1.0-alpha.2](https://img.shields.io/badge/Version-0.1.0--alpha.2-blue.svg)](https://github.com/guowenju/portal-os)
+[![Version: 0.1.0-alpha.3](https://img.shields.io/badge/Version-0.1.0--alpha.3-blue.svg)](https://github.com/guowenju/portal-os)
 [![Container: Docker](https://img.shields.io/badge/Container-Docker-2496ed.svg)](https://hub.docker.com/r/guowenju/portal-os)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16a34a.svg)](https://opensource.org/license/mit)
 
@@ -9,7 +9,7 @@ PortalOS 是一个动物森林风格的仿桌面系统博客。它把博客和�
 
 ## 项目状态
 
-PortalOS 仍处于早期预发布阶段，核心体验和接口可能会随着设计迭代继续调整。当前版本适合预览、试用和参与反馈。
+PortalOS 仍处于早期预发布阶段，核心体验、接口和数据结构可能会随着设计迭代继续调整。当前版本适合预览、试用和参与反馈，不建议用于未经备份的生产内容。
 
 ## 项目预览
 
@@ -21,6 +21,10 @@ PortalOS 仍处于早期预发布阶段，核心体验和接口可能会随着�
 - 动物森林风格界面：面向轻松、温暖、可探索的个人站点体验。
 - 应用化内容入口：博客和工具可以作为独立应用运行在统一桌面壳中。
 - 博客创作闭环：通过岛务后台完成草稿、Markdown 预览、发布和回收站管理。
+- 博客永久链接：文章支持 `/blog/:slug` 直达、刷新、分享和历史地址跳转。
+- 内容发现能力：提供全文搜索、分类标签筛选、分页、目录、RSS 和 sitemap。
+- 安全图片库：支持图片上传、正文插入、封面与分享图设置，以及引用删除保护。
+- 自动保存：草稿写入服务端并保留浏览器恢复快照，支持版本冲突处理。
 - 前后端一体化：前端负责交互体验，Rust 后端提供服务能力与静态资源承载。
 - Docker 部署支持：提供脚本和 Compose 示例，便于自托管和发布。
 
@@ -57,6 +61,8 @@ PORTAL_OS_ADMIN_PASSWORD=请设置至少12位的强密码
 本地开发可将 `.example.env` 复制为根目录 `.env`，后端启动时会自动加载；进程环境变量优先于 `.env`。
 
 公开博客位于桌面的“岛屿手账”，管理入口为 `/admin`。
+
+首次发布文章前，请在“岛务管理 → 站点设置”中填写完整站点 URL；该地址用于文章 canonical、RSS、sitemap 和社交分享信息。
 
 构建前端资源：
 

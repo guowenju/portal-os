@@ -53,6 +53,19 @@ interface MarkdownRenderEnv {
   resolveAssetUrl?: (url: string) => string
 }
 
+export interface MarkdownHeading {
+  id: string
+  level: number
+  text: string
+}
+
+export interface MarkdownDocument {
+  html: string
+  headings: MarkdownHeading[]
+  wordCount: number
+  readingMinutes: number
+}
+
 markdown.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   const token = tokens[idx]
   token.attrSet('target', '_blank')
@@ -94,5 +107,42 @@ markdown.renderer.rules.fence = (tokens, idx, options, env, self) => {
  * @returns 可用于 v-html 的 HTML。
  */
 export function renderMarkdown(content: string, env: MarkdownRenderEnv = {}) {
-  return markdown.render(content, env)
+  return renderMarkdownDocument(content, env).html
+}
+
+/** 将 Markdown 一次解析为正文、目录和阅读统计。 */
+export function renderMarkdownDocument(
+  content: string,
+  env: MarkdownRenderEnv = {},
+): MarkdownDocument {
+  const tokens = markdown.parse(content, env)
+  const headings: MarkdownHeading[] = []
+  const usedIds = new Map<string, number>()
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index]
+    if (token.type !== 'heading_open') continue
+    const inline = tokens[index + 1]
+    const text = inline?.type === 'inline' ? inline.content.trim() : ''
+    const baseId =
+      text
+        .toLowerCase()
+        .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+        .replace(/^-|-$/g, '') || `section-${headings.length + 1}`
+    const count = usedIds.get(baseId) ?? 0
+    usedIds.set(baseId, count + 1)
+    const id = count === 0 ? baseId : `${baseId}-${count + 1}`
+    token.attrSet('id', id)
+    headings.push({ id, level: Number(token.tag.slice(1)), text })
+  }
+  const latinWords = content.match(/[A-Za-z0-9_]+/g)?.length ?? 0
+  const wideCharacters =
+    content.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu)
+      ?.length ?? 0
+  const wordCount = latinWords + wideCharacters
+  return {
+    html: markdown.renderer.render(tokens, markdown.options, env),
+    headings,
+    wordCount,
+    readingMinutes: Math.max(1, Math.ceil((latinWords + wideCharacters / 2) / 220)),
+  }
 }

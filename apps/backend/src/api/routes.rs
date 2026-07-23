@@ -1,7 +1,7 @@
 //! 路由注册：公开站点只保留应用 API 与前端静态资源回退。
 
 use crate::apps;
-use crate::services::static_handler::fallback_handler;
+use crate::services::static_handler::{fallback_handler, public_content_router};
 use anyhow::Result;
 use axum::extract::connect_info::ConnectInfo;
 use axum::{Router, body::Body, extract::DefaultBodyLimit, http::Request};
@@ -29,6 +29,7 @@ pub async fn create_router(database: Db) -> Result<Router> {
     let admin_state = apps::admin::AdminState { repository };
 
     let router = Router::new()
+        .merge(public_content_router().with_state(admin_state.clone()))
         .nest("/api/v1", public_api_router()?)
         .nest(
             "/api/v1",

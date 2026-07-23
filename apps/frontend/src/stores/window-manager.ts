@@ -62,6 +62,7 @@ interface OpenWindowOptions {
   height?: number
   minWidth?: number
   minHeight?: number
+  isMaximized?: boolean
 }
 
 const HEADER_HEIGHT = 40
@@ -334,6 +335,7 @@ export const useWindowManagerStore = create<WindowManagerStore>((set, get) => ({
                 minHeight,
                 width: Math.max(options?.width ?? item.width, minWidth),
                 height: Math.max(options?.height ?? item.height, minHeight),
+                isMaximized: options?.isMaximized ?? item.isMaximized,
                 zIndex: getMaxZIndex(state.openWindows) + 1,
               }
             : item,
@@ -372,7 +374,7 @@ export const useWindowManagerStore = create<WindowManagerStore>((set, get) => ({
             minWidth,
             minHeight,
             isMinimized: false,
-            isMaximized: false,
+            isMaximized: options?.isMaximized ?? false,
             zIndex: newZIndex,
             payload,
           },

@@ -1,6 +1,6 @@
 //! Repository：隔离 Toasty 查询类型与 HTTP 业务层。
 
-use super::models::{AdminUser, Article, Category, Tag};
+use super::models::{AdminUser, Article, Category, SiteSettings, Tag};
 use toasty::Db;
 
 /// PortalOS 数据访问入口。
@@ -41,5 +41,10 @@ impl Repository {
     /// 列出全部标签。
     pub async fn tags(&self) -> toasty::Result<Vec<Tag>> {
         Tag::all().exec(&mut self.db.clone()).await
+    }
+
+    /// 读取唯一站点设置。
+    pub async fn site_settings(&self) -> toasty::Result<SiteSettings> {
+        SiteSettings::get_by_id(&mut self.db.clone(), 1).await
     }
 }

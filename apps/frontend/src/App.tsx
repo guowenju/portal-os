@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Route, BrowserRouter, Routes } from 'react-router-dom'
+import { Route, BrowserRouter, Routes, useParams } from 'react-router-dom'
 import ConfirmationModal from './components/common/ConfirmationModal'
 import ToastNotification from './components/common/ToastNotification'
 import DesktopLayout from './components/layout/DesktopLayout'
@@ -28,6 +28,14 @@ function restoreTheme() {
 restoreTheme()
 restoreWallpaper()
 
+/** 根据公开博客路由打开最大化手账窗口。 */
+function BlogDesktopRoute() {
+  const { slug } = useParams()
+  return (
+    <DesktopPage initialApp="blog" initialPayload={slug ? { slug } : undefined} initialMaximized />
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -35,6 +43,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<DesktopLayout />}>
             <Route index element={<DesktopPage />} />
+            <Route path="blog" element={<BlogDesktopRoute />} />
+            <Route path="blog/:slug" element={<BlogDesktopRoute />} />
             <Route path="admin" element={<DesktopPage initialApp="admin" />} />
           </Route>
         </Routes>
