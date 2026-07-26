@@ -10,7 +10,7 @@ fn main() -> Result<()> {
         .build()
         .unwrap();
 
-    let dist_dir = Path::new("..").join("web").join("dist");
+    let dist_dir = Path::new(".").join("frontend").join("dist");
     println!("cargo:rerun-if-changed={}", dist_dir.display());
     if dist_dir.exists() {
         emit_rerun_if_changed(&dist_dir).with_context(|| {

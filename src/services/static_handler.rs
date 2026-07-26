@@ -21,7 +21,7 @@ use std::{env, path::PathBuf};
 
 /// 使用 rust-embed 宏，在编译时将前端静态资源打包进二进制文件。
 #[derive(RustEmbed)]
-#[folder = "../frontend/dist"]
+#[folder = "frontend/dist"]
 struct FrontendAssets;
 
 /// 注册不位于 API 命名空间的公开内容路由。

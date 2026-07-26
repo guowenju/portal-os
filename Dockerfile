@@ -9,11 +9,11 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 RUN corepack enable && corepack prepare pnpm@10.24.0 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/frontend/package.json apps/frontend/package.json
+COPY frontend/package.json frontend/package.json
 RUN pnpm install --frozen-lockfile
 
-COPY apps/frontend apps/frontend
-RUN pnpm --dir apps/frontend build
+COPY frontend frontend
+RUN pnpm --dir frontend build
 
 FROM ${RUST_IMAGE} AS server-builder
 
@@ -28,9 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libssl-dev \
   && rm -rf /var/lib/apt/lists/*
 
-COPY Cargo.toml Cargo.lock ./
-COPY apps/backend apps/backend
-COPY --from=frontend-builder /workspace/apps/frontend/dist apps/frontend/dist
+COPY Cargo.toml Cargo.lock build.rs ./
+COPY src src
+COPY --from=frontend-builder /workspace/frontend/dist frontend/dist
 RUN cargo build --release --locked
 
 FROM ${RUNTIME_IMAGE}

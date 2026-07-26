@@ -16,23 +16,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Read workspace version
+      - name: Read package version
         id: version
         shell: bash
         run: |
           set -euo pipefail
-          cargo_version="$(awk '
-            /^\[workspace\.package\]/ { in_section = 1; next }
-            /^\[/ { if (in_section) exit }
-            in_section && /version[[:space:]]*=/ {
-              if (match($0, /"[^"]+"/)) {
-                print substr($0, RSTART + 1, RLENGTH - 2)
-                exit
-              }
-            }
-          ' Cargo.toml)"
+          package_id="$(cargo pkgid -p portal-os)"
+          cargo_version="${package_id##*#}"
+          cargo_version="${cargo_version##*@}"
           if [ -z "$cargo_version" ]; then
-            echo "Unable to read version from Cargo.toml" >&2
+            echo "Unable to read portal-os version from Cargo.toml" >&2
             exit 1
           fi
           echo "version=$cargo_version" >> "$GITHUB_OUTPUT"

@@ -4,11 +4,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-read_workspace_version() {
+read_version() {
   awk '
-    /^\[workspace.package\]$/ { in_workspace_package = 1; next }
-    /^\[/ { in_workspace_package = 0 }
-    in_workspace_package && /^version[[:space:]]*=/ {
+    /^\[package\]$/ { in_package = 1; next }
+    /^\[/ { in_package = 0 }
+    in_package && /^version[[:space:]]*=/ {
       gsub(/"/, "", $3)
       print $3
       exit
@@ -17,7 +17,7 @@ read_workspace_version() {
 }
 
 IMAGE_NAME="${IMAGE_NAME:-portal-os}"
-IMAGE_TAG="${IMAGE_TAG:-$(read_workspace_version)}"
+IMAGE_TAG="${IMAGE_TAG:-$(read_version)}"
 PLATFORM="${PLATFORM:-}"
 NODE_IMAGE="${NODE_IMAGE:-node:24-trixie-slim}"
 RUST_IMAGE="${RUST_IMAGE:-rust:1.95.0-trixie}"

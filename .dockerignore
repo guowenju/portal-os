@@ -3,9 +3,9 @@
 .vscode
 node_modules
 target
-apps/frontend/node_modules
-apps/frontend/dist
-apps/backend/target
+frontend/node_modules
+frontend/dist
+backend/target
 dist
 coverage
 *.log
