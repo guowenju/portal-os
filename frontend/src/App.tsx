@@ -29,6 +29,18 @@ function restoreTheme() {
 restoreTheme()
 restoreWallpaper()
 
+/** 根据后端注入的私有标记解析当前管理员入口。 */
+function resolveAdminRoute() {
+  const currentPath = window.location.pathname.replace(/^\/+|\/+$/g, '')
+  const hasAdminMarker = document.head.querySelector('meta[name="portal-admin-entry"]') !== null
+
+  if (hasAdminMarker) {
+    return currentPath || null
+  }
+
+  return import.meta.env.DEV && currentPath === 'admin' ? 'admin' : null
+}
+
 /** 根据公开博客路由打开最大化手账窗口。 */
 function BlogDesktopRoute() {
   const { slug } = useParams()
@@ -38,6 +50,8 @@ function BlogDesktopRoute() {
 }
 
 export default function App() {
+  const adminRoute = resolveAdminRoute()
+
   return (
     <BrowserRouter>
       <Suspense fallback={<div className="app-loading">加载中...</div>}>
@@ -46,7 +60,7 @@ export default function App() {
             <Route index element={<DesktopPage />} />
             <Route path="blog" element={<BlogDesktopRoute />} />
             <Route path="blog/:slug" element={<BlogDesktopRoute />} />
-            <Route path="admin" element={<DesktopPage initialApp="admin" />} />
+            {adminRoute && <Route path={adminRoute} element={<DesktopPage initialApp="admin" />} />}
           </Route>
         </Routes>
       </Suspense>

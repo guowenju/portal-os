@@ -7,7 +7,8 @@ services:
       RUST_LOG: info
       PORTAL_OS_DATA_DIR: /app/data
       PORTAL_OS_ADMIN_USERNAME: ${PORTAL_OS_ADMIN_USERNAME:?请设置管理员用户名}
-      PORTAL_OS_ADMIN_PASSWORD: ${PORTAL_OS_ADMIN_PASSWORD:?请设置至少 12 位的管理员密码}
+      PORTAL_OS_ADMIN_PASSWORD: ${PORTAL_OS_ADMIN_PASSWORD:?请设置管理员密码}
+      PORTAL_OS_ADMIN_PATH: ${PORTAL_OS_ADMIN_PATH:-admin}
     ports:
       - '9090:9090'
     volumes:

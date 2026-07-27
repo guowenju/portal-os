@@ -55,12 +55,15 @@ pnpm dev
 ```bash
 PORTAL_OS_DATA_DIR=./data
 PORTAL_OS_ADMIN_USERNAME=admin
-PORTAL_OS_ADMIN_PASSWORD=请设置至少12位的强密码
+PORTAL_OS_ADMIN_PASSWORD=admin
+PORTAL_OS_ADMIN_PATH=admin
 ```
 
 本地开发可将 `.example.env` 复制为根目录 `.env`，后端启动时会自动加载；进程环境变量优先于 `.env`。
 
-公开博客位于桌面的“岛屿手账”，管理入口为 `/admin`。
+管理员用户名和密码仅用于空数据库首次初始化，且都只要求非空；密码强度由部署者自行控制，已有数据库中的账号不会因环境变量变化而自动修改。
+
+公开博客位于桌面的“岛屿手账”。管理入口由 `PORTAL_OS_ADMIN_PATH` 配置，未设置时为 `/admin`；支持 `ops/admin` 这样的多级相对路径。自定义入口不会出现在公开页面或 `robots.txt` 中。
 
 首次发布文章前，请在“岛务管理 → 站点设置”中填写完整站点 URL；该地址用于文章 canonical、RSS、sitemap 和社交分享信息。
 
@@ -98,7 +101,7 @@ NODE_IMAGE=node:24-bullseye-slim RUST_IMAGE=rust:1.94-bullseye RUNTIME_IMAGE=deb
 启动 Compose 示例：
 
 ```bash
-docker compose -f docker-compose.example.yml up -d
+docker compose up -d
 ```
 
 ## 致谢

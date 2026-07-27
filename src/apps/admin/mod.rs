@@ -27,6 +27,8 @@ use std::{
 };
 
 const SESSION_COOKIE: &str = "portal_admin_session";
+const DEFAULT_ADMIN_PATH: &str = "admin";
+const RESERVED_ADMIN_PATH_PREFIXES: &[&str] = &["api", "assets", "blog", "media"];
 static LOGIN_FAILURES: OnceLock<Mutex<HashMap<String, (u8, Instant)>>> = OnceLock::new();
 
 /// 后台共享状态。
@@ -44,6 +46,55 @@ pub fn router() -> Router<AdminState> {
         .route("/admin/auth/change-password", post(change_password))
 }
 
+/// 读取并校验管理员页面入口路径。
+pub fn configured_admin_path() -> anyhow::Result<String> {
+    match env::var("PORTAL_OS_ADMIN_PATH") {
+        Ok(value) => normalize_admin_path(Some(&value)),
+        Err(env::VarError::NotPresent) => normalize_admin_path(None),
+        Err(env::VarError::NotUnicode(_)) => {
+            anyhow::bail!("PORTAL_OS_ADMIN_PATH 必须是有效的 UTF-8 字符串")
+        }
+    }
+}
+
+/// 将管理员入口规范化为无首尾斜杠的安全相对路径。
+fn normalize_admin_path(value: Option<&str>) -> anyhow::Result<String> {
+    let Some(value) = value else {
+        return Ok(DEFAULT_ADMIN_PATH.to_string());
+    };
+    let path = value.trim().trim_matches('/');
+    if path.is_empty() {
+        anyhow::bail!("PORTAL_OS_ADMIN_PATH 不能为空");
+    }
+    let segments = path.split('/').collect::<Vec<_>>();
+    if segments.iter().any(|segment| {
+        segment.is_empty()
+            || !segment
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
+    }) {
+        anyhow::bail!("PORTAL_OS_ADMIN_PATH 每一段仅允许 ASCII 字母、数字、- 和 _");
+    }
+    if RESERVED_ADMIN_PATH_PREFIXES.contains(&segments[0]) {
+        anyhow::bail!(
+            "PORTAL_OS_ADMIN_PATH 不能与公开路由前缀 {} 冲突",
+            segments[0]
+        );
+    }
+    Ok(segments.join("/"))
+}
+
+/// 校验首次初始化使用的管理员账号与密码。
+fn validate_admin_credentials(username: &str, password: &str) -> anyhow::Result<()> {
+    if username.trim().is_empty() {
+        anyhow::bail!("管理员用户名不能为空");
+    }
+    if password.trim().is_empty() {
+        anyhow::bail!("管理员初始密码不能为空");
+    }
+    Ok(())
+}
+
 /// 在空库中创建唯一管理员。
 pub async fn ensure_admin(repository: &Repository) -> anyhow::Result<()> {
     if repository.admin().await?.is_some() {
@@ -53,9 +104,7 @@ pub async fn ensure_admin(repository: &Repository) -> anyhow::Result<()> {
         .map_err(|_| anyhow::anyhow!("首次启动必须设置 PORTAL_OS_ADMIN_USERNAME"))?;
     let password = env::var("PORTAL_OS_ADMIN_PASSWORD")
         .map_err(|_| anyhow::anyhow!("首次启动必须设置 PORTAL_OS_ADMIN_PASSWORD"))?;
-    if username.trim().is_empty() || password.len() < 12 {
-        anyhow::bail!("管理员用户名不能为空，初始密码至少需要 12 个字符");
-    }
+    validate_admin_credentials(&username, &password)?;
     let now = Utc::now().to_rfc3339();
     AdminUser::create()
         .username(username.trim())
@@ -212,11 +261,11 @@ async fn change_password(
             "INVALID_CURRENT_PASSWORD",
         ));
     }
-    if input.new_password.len() < 12 {
+    if input.new_password.trim().is_empty() {
         return Err(ApiError::new(
             StatusCode::UNPROCESSABLE_ENTITY,
-            "新密码至少需要 12 个字符",
-            "WEAK_PASSWORD",
+            "新密码不能为空",
+            "INVALID_PASSWORD",
         ));
     }
     user.update()
@@ -400,14 +449,39 @@ fn trusted_origin(origin: &str, host: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{hash_password, trusted_origin, verify_password};
+    use super::{
+        hash_password, normalize_admin_path, trusted_origin, validate_admin_credentials,
+        verify_password,
+    };
 
     /// 验证管理员密码仅能由正确明文通过 Argon2id 校验。
     #[test]
     fn hashes_admin_password() {
-        let encoded = hash_password("portal-os-test-password").unwrap();
-        assert!(verify_password("portal-os-test-password", &encoded));
+        let encoded = hash_password("admin").unwrap();
+        assert!(verify_password("admin", &encoded));
         assert!(!verify_password("wrong-password", &encoded));
+    }
+
+    /// 管理员入口支持默认值、多级路径与首尾斜杠规范化。
+    #[test]
+    fn normalizes_admin_paths() {
+        assert_eq!(normalize_admin_path(None).unwrap(), "admin");
+        assert_eq!(
+            normalize_admin_path(Some(" /ops/admin/ ")).unwrap(),
+            "ops/admin"
+        );
+        assert!(normalize_admin_path(Some("")).is_err());
+        assert!(normalize_admin_path(Some("ops//admin")).is_err());
+        assert!(normalize_admin_path(Some("blog/admin")).is_err());
+        assert!(normalize_admin_path(Some("ops/admin.html")).is_err());
+    }
+
+    /// 管理员凭据允许短密码，但仍拒绝空账号与空密码。
+    #[test]
+    fn accepts_user_controlled_admin_passwords() {
+        assert!(validate_admin_credentials("admin", "admin").is_ok());
+        assert!(validate_admin_credentials("", "admin").is_err());
+        assert!(validate_admin_credentials("admin", "   ").is_err());
     }
 
     /// 验证开发服务器跨端口来源与生产同源均可通过校验。

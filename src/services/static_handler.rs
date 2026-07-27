@@ -24,6 +24,8 @@ use std::{env, path::PathBuf};
 #[folder = "frontend/dist"]
 struct FrontendAssets;
 
+const ADMIN_ENTRY_MARKER: &str = r#"<meta name="portal-admin-entry" content="true">"#;
+
 /// 注册不位于 API 命名空间的公开内容路由。
 pub fn public_content_router() -> Router<AdminState> {
     Router::new()
@@ -32,6 +34,26 @@ pub fn public_content_router() -> Router<AdminState> {
         .route("/sitemap.xml", get(sitemap))
         .route("/robots.txt", get(robots))
         .route("/media/{storage_key}", get(media))
+}
+
+/// 返回仅供配置入口使用的后台 SPA 页面。
+pub async fn admin_page() -> Result<Response, StatusCode> {
+    let template = FrontendAssets::get("index.html").ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+    let template = String::from_utf8_lossy(&template.data);
+    let html = inject_admin_entry_marker(&template).ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+    Response::builder()
+        .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+        .header(header::CACHE_CONTROL, "no-store")
+        .header("x-robots-tag", "noindex, nofollow")
+        .body(Body::from(html))
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+}
+
+/// 在后台入口页面的头部写入不包含实际路径的内部标记。
+fn inject_admin_entry_marker(template: &str) -> Option<String> {
+    template
+        .contains("</head>")
+        .then(|| template.replacen("</head>", &format!("{ADMIN_ENTRY_MARKER}</head>"), 1))
 }
 
 /// API 404 响应的 JSON 载荷。
@@ -249,7 +271,7 @@ async fn robots(State(state): State<AdminState>) -> Result<Response, StatusCode>
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let body = format!(
-        "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/v1/admin\nSitemap: {}\n",
+        "User-agent: *\nAllow: /\nDisallow: /api/v1/admin\nSitemap: {}\n",
         absolute_url(&settings.site_url, "/sitemap.xml")
     );
     Response::builder()
@@ -364,7 +386,17 @@ async fn handler_404() -> (StatusCode, Json<NotFound>) {
 
 #[cfg(test)]
 mod tests {
-    use super::{render_markdown, rss_date};
+    use super::{ADMIN_ENTRY_MARKER, inject_admin_entry_marker, render_markdown, rss_date};
+
+    /// 后台页面只注入内部标记，不携带实际入口路径。
+    #[test]
+    fn injects_private_admin_entry_marker() {
+        let html = inject_admin_entry_marker("<html><head></head><body></body></html>").unwrap();
+        assert!(html.contains(ADMIN_ENTRY_MARKER));
+        assert!(!html.contains("ops/admin"));
+        assert_eq!(html.matches(ADMIN_ENTRY_MARKER).count(), 1);
+        assert!(inject_admin_entry_marker("<html></html>").is_none());
+    }
 
     /// 服务端 Markdown 必须移除脚本，同时保留普通正文。
     #[test]
