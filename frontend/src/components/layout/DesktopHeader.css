@@ -1,0 +1,366 @@
+/* 桌面顶部导航与应用库样式。 */
+.app-header-content {
+  position: relative;
+  z-index: 10000;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  color: var(--portal-header-text);
+  background: var(--portal-header-bg);
+  border-bottom: 2px solid var(--portal-header-border);
+  backdrop-filter: blur(14px);
+  user-select: none;
+}
+
+.app-header-center,
+.app-nav-home,
+.app-nav-apps-group,
+.app-header-operate {
+  display: flex;
+  align-items: center;
+}
+
+.app-nav-home {
+  gap: 8px;
+}
+
+.app-header-center {
+  gap: 5px;
+  padding: 3px 5px;
+  border: 2px solid var(--portal-header-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.app-nav-home-separated {
+  padding-right: 5px;
+  border-right: 2px dashed var(--portal-header-border);
+}
+
+.app-nav-apps-group {
+  gap: 4px;
+}
+
+.app-nav-apps-group-separated {
+  padding-left: 5px;
+}
+
+.app-desktop-btn,
+.app-library-btn,
+.app-nav-app {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: inherit;
+  background: rgba(247, 243, 223, 0.58);
+  box-shadow: 0 3px 0 rgba(189, 174, 160, 0.7);
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.app-desktop-btn:hover,
+.app-library-btn:hover,
+.app-nav-app:hover,
+.app-app-active {
+  background: #fff9e3;
+  transform: translateY(-1px);
+}
+
+.app-desktop-btn .portal-icon,
+.app-library-btn .portal-icon {
+  display: block;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.45));
+}
+
+.app-app-minimized {
+  opacity: 0.58;
+}
+
+.app-nav-app-label {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.app-header-space {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.app-header-logo {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 13px 2px 5px;
+  border: 2px solid rgba(154, 131, 90, 0.22);
+  border-radius: 999px;
+  background: rgba(247, 243, 223, 0.72);
+  box-shadow: 0 4px 0 rgba(189, 174, 160, 0.56);
+}
+
+.app-logo-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff9e3;
+  box-shadow: inset 0 0 0 2px rgba(255, 204, 0, 0.36);
+}
+
+.app-logo-mark svg {
+  width: 24px;
+  height: 24px;
+}
+
+.app-logo-mark-leaf {
+  stroke: #725d42;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app-logo-mark-leaf-main {
+  fill: #19c8b9;
+}
+
+.app-logo-mark-leaf-accent {
+  fill: #d1da49;
+}
+
+.app-logo-mark-dot {
+  fill: #f7cd67;
+  stroke: #725d42;
+  stroke-width: 2;
+}
+
+.app-logo-word {
+  position: relative;
+  display: inline-block;
+  color: #794f27;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 0 rgba(247, 205, 103, 0.7);
+}
+
+.app-logo-word::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  -webkit-text-stroke: 4px rgba(255, 249, 227, 0.7);
+}
+
+.app-nav-app-label .portal-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.app-library-panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(43, 33, 24, 0.58);
+  backdrop-filter: blur(8px);
+}
+
+.app-library-panel-wrapper {
+  width: min(920px, calc(100% - 40px));
+  height: min(680px, calc(100% - 40px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 3px solid rgba(154, 131, 90, 0.34);
+  border-radius: 28px;
+  background: var(--portal-app-surface);
+  box-shadow: var(--portal-app-shadow);
+}
+
+.app-library-panel-header {
+  padding: 18px 24px;
+  color: var(--portal-app-text);
+  font-size: 18px;
+  font-weight: 900;
+  border-bottom: 2px dashed var(--portal-app-border);
+}
+
+.app-library-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 124px);
+  justify-content: center;
+  align-content: start;
+  gap: 16px;
+  padding: 24px 34px;
+  overflow-y: auto;
+}
+
+.app-library-item {
+  position: relative;
+  width: 124px;
+  height: 124px;
+  border: 2px solid transparent;
+  border-radius: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--portal-app-text);
+  background: var(--portal-app-surface-subtle);
+  cursor: pointer;
+  box-shadow: 0 5px 0 rgba(189, 174, 160, 0.62);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.app-library-item:hover {
+  border-color: var(--portal-app-accent);
+  transform: translateY(-2px);
+}
+
+.app-library-icon {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 31px;
+}
+
+.app-library-icon .portal-icon {
+  display: block;
+  width: 42px;
+  height: 42px;
+}
+
+.app-library-title {
+  max-width: 100%;
+  color: var(--portal-app-text);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.app-library-badge {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #725d42;
+  background: #f7cd67;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.app-library-badge-planned {
+  background: #889df0;
+  color: #fff;
+}
+
+.app-library-badge-testing {
+  background: #82d5bb;
+}
+
+@media (max-width: 760px) {
+  .app-header-content {
+    height: 48px;
+    padding: 0 8px;
+  }
+
+  .app-header-center {
+    max-width: calc(100vw - 16px);
+    gap: 6px;
+    padding: 4px 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .app-header-center::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-header-space {
+    display: none;
+  }
+
+  .app-desktop-btn,
+  .app-library-btn,
+  .app-nav-app {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+  }
+
+  .app-nav-home {
+    gap: 6px;
+  }
+
+  .app-nav-apps-group {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .app-nav-apps-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-library-panel-overlay {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding-top: 56px;
+  }
+
+  .app-library-panel-wrapper {
+    width: 100%;
+    height: min(76vh, 620px);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .app-library-panel-header {
+    padding: 16px 18px;
+  }
+
+  .app-library-grid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 12px;
+    padding: 16px 14px 24px;
+  }
+
+  .app-library-item {
+    width: 100%;
+    height: 106px;
+    border-radius: 22px;
+  }
+}

@@ -9,6 +9,7 @@ import {
   type WallpaperId,
 } from '@/utils/wallpapers'
 import { useWeatherStore } from '@/stores/weather'
+import './SettingsPage.css'
 
 type LocaleCode = 'en' | 'zh'
 type ThemeMode = 'light' | 'dark'

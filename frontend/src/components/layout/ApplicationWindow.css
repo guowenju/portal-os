@@ -1,0 +1,251 @@
+/* 应用窗口、控制按钮与缩放边界样式。 */
+.app-window-container {
+  position: absolute;
+  min-width: 300px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 3px solid var(--portal-window-border);
+  border-radius: 24px;
+  background: var(--portal-window-bg);
+  box-shadow:
+    0 12px 0 rgba(189, 174, 160, 0.78),
+    0 24px 54px rgba(61, 52, 40, 0.22);
+  transition: box-shadow 0.16s ease;
+}
+
+.app-window-focused {
+  box-shadow:
+    0 12px 0 rgba(80, 185, 171, 0.62),
+    0 26px 60px rgba(25, 200, 185, 0.24);
+}
+
+.app-window-header {
+  position: relative;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  cursor: grab;
+  user-select: none;
+  background: var(--portal-window-header-bg);
+  border-bottom: 2px solid var(--portal-window-border);
+}
+
+.app-window-title {
+  position: absolute;
+  left: 50%;
+  max-width: calc(100% - 130px);
+  transform: translateX(-50%);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--portal-window-title);
+  font-size: 13px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-window-title-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-window-title-icon .portal-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.app-window-controls {
+  z-index: 10;
+  display: flex;
+  gap: 7px;
+}
+
+.app-window-controls .app-tooltip {
+  display: inline-flex;
+}
+
+.app-window-controls .app-tooltip-bubble {
+  top: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 249, 227, 0.48);
+  color: #725d42;
+  background: #fff9e3;
+  box-shadow: 0 4px 0 rgba(189, 174, 160, 0.58);
+}
+
+.app-control-btn {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(114, 93, 66, 0.28);
+  cursor: pointer;
+  transition: transform 0.16s ease;
+}
+
+.app-control-btn:hover {
+  transform: scale(1.08);
+}
+
+.app-btn-close {
+  background: #fc736d;
+}
+
+.app-btn-minimize {
+  background: #f7cd67;
+}
+
+.app-btn-maximize {
+  background: #8ac68a;
+}
+
+.app-window-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  color: var(--portal-window-content-text);
+  background: var(--portal-window-content-bg);
+}
+
+.app-window-resizer {
+  position: absolute;
+  z-index: 5;
+}
+
+.resizer-n,
+.resizer-s {
+  left: 10px;
+  right: 10px;
+  height: 8px;
+}
+
+.resizer-e,
+.resizer-w {
+  top: 10px;
+  bottom: 10px;
+  width: 8px;
+}
+
+.resizer-n {
+  top: 0;
+  cursor: n-resize;
+}
+
+.resizer-s {
+  bottom: 0;
+  cursor: s-resize;
+}
+
+.resizer-e {
+  right: 0;
+  cursor: e-resize;
+}
+
+.resizer-w {
+  left: 0;
+  cursor: w-resize;
+}
+
+.resizer-ne,
+.resizer-nw,
+.resizer-se,
+.resizer-sw {
+  width: 14px;
+  height: 14px;
+}
+
+.resizer-ne {
+  top: 0;
+  right: 0;
+  cursor: ne-resize;
+}
+
+.resizer-nw {
+  top: 0;
+  left: 0;
+  cursor: nw-resize;
+}
+
+.resizer-se {
+  right: 0;
+  bottom: 0;
+  cursor: se-resize;
+}
+
+.resizer-sw {
+  left: 0;
+  bottom: 0;
+  cursor: sw-resize;
+}
+
+.app-window-maximized {
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: calc(100vh - 40px) !important;
+  transform: none !important;
+  border-radius: 0;
+}
+
+@media (max-width: 760px) {
+  .app-window-container {
+    inset: 0;
+    display: none;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    transform: none !important;
+    box-shadow: none;
+  }
+
+  .app-window-mobile-active {
+    display: flex;
+    box-shadow: none;
+  }
+
+  .app-window-maximized {
+    height: 100% !important;
+  }
+
+  .app-window-header {
+    height: 46px;
+    padding: 0 12px;
+    cursor: default;
+  }
+
+  .app-window-title {
+    max-width: calc(100% - 124px);
+    font-size: 14px;
+  }
+
+  .app-window-controls {
+    gap: 9px;
+  }
+
+  .app-control-btn {
+    width: 18px;
+    height: 18px;
+  }
+
+  .app-window-resizer {
+    display: none;
+  }
+}

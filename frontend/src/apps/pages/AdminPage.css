@@ -1,0 +1,267 @@
+/* 岛屿管理应用样式。 */
+.admin-login {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 24px;
+  background: var(--portal-feature-bg);
+}
+
+.admin-login-card {
+  width: min(420px, 100%);
+}
+
+.admin-form {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--portal-app-bg);
+  color: var(--portal-app-text);
+}
+
+.admin-main-tabs,
+.admin-main-tabs > div:last-child {
+  min-height: 0;
+  height: 100%;
+}
+
+.admin-main-tabs {
+  overflow: hidden;
+}
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background: var(--portal-window-header-bg);
+  border-bottom: 2px solid var(--portal-app-border);
+}
+
+.admin-actions,
+.admin-savebar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.admin-message {
+  margin-left: 12px;
+  color: var(--portal-app-accent-strong);
+}
+
+.admin-workspace {
+  display: grid;
+  grid-template-columns: 390px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.admin-list {
+  padding: 16px;
+  overflow: auto;
+  background: var(--portal-app-surface-subtle);
+  border-right: 2px solid var(--portal-app-border);
+}
+
+.admin-list > button {
+  margin-bottom: 14px;
+}
+
+.admin-list-actions,
+.admin-inline-form,
+.admin-media-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.admin-detail {
+  padding: 18px;
+  overflow: auto;
+}
+
+.admin-savebar {
+  margin-bottom: 14px;
+}
+
+.admin-editor-desktop {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+  gap: 16px;
+  height: calc(100% - 52px);
+}
+
+.admin-editor-pane {
+  display: grid;
+  grid-template-rows: auto auto 90px auto minmax(320px, 1fr);
+  gap: 10px;
+}
+
+.admin-taxonomy-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-summary,
+.admin-markdown {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  padding: 14px 16px;
+  color: var(--portal-app-text);
+  background: var(--portal-app-surface);
+  border: 2px solid var(--portal-app-border);
+  border-radius: 18px;
+  font: inherit;
+  outline: none;
+}
+
+.admin-summary:focus,
+.admin-markdown:focus {
+  border-color: var(--portal-app-accent);
+  box-shadow: 0 0 0 3px var(--portal-app-accent-soft);
+}
+
+.admin-markdown {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  line-height: 1.65;
+}
+
+.admin-preview {
+  padding: 18px;
+  overflow: auto;
+  background: var(--portal-app-surface);
+  border: 2px solid var(--portal-app-border);
+  border-radius: 24px;
+}
+
+.admin-editor-mobile {
+  display: none;
+}
+
+.admin-section {
+  height: 100%;
+  padding: 18px;
+  overflow: auto;
+}
+
+.admin-taxonomy-section {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: visible;
+}
+
+.admin-inline-form > :nth-child(2) {
+  flex: 1 1 240px;
+}
+
+.admin-taxonomy-create {
+  height: 40px;
+  box-shadow: 0 3px #bdaea0;
+}
+
+.admin-taxonomy-create:hover:not(:disabled) {
+  box-shadow: 0 4px #bdaea0;
+}
+
+.admin-taxonomy-create:active:not(:disabled) {
+  box-shadow: 0 1px #bdaea0;
+}
+
+.admin-taxonomy-list {
+  display: grid;
+  min-height: 0;
+  overflow: auto;
+  gap: 10px;
+}
+
+.admin-taxonomy-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(5, auto);
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-file-input {
+  display: none;
+}
+
+.admin-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.admin-media-grid > div {
+  display: grid;
+  gap: 9px;
+}
+
+.admin-media-grid img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.admin-settings-form {
+  width: min(720px, 100%);
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.admin-settings-form textarea {
+  min-height: 110px;
+  resize: vertical;
+  border: 2px solid var(--portal-app-border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--portal-app-text);
+  background: var(--portal-app-surface);
+  font: inherit;
+}
+
+@media (max-width: 860px) {
+  .admin-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-list {
+    max-height: 42%;
+    border-right: 0;
+    border-bottom: 2px solid var(--portal-app-border);
+  }
+
+  .admin-editor-desktop {
+    display: none;
+  }
+
+  .admin-editor-mobile {
+    display: block;
+  }
+
+  .admin-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-taxonomy-list > div {
+    grid-template-columns: minmax(0, 1fr) repeat(3, auto);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-app * {
+    scroll-behavior: auto !important;
+  }
+}

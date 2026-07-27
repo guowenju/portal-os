@@ -1,4 +1,5 @@
 import { useNotificationStore } from '@/stores/notification'
+import './ToastNotification.css'
 
 /**
  * @description 显示全局消息通知队列。

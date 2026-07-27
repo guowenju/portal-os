@@ -7,6 +7,7 @@ import { useWindowManagerStore } from '@/stores/window-manager'
 import { useWeatherStore } from '@/stores/weather'
 import { useMobileViewport } from '@/hooks/use-mobile-viewport'
 import type { AppId } from '@/apps/registry'
+import './DesktopPage.css'
 
 /**
  * @description 桌面背景视图，包含应用图标和所有活动窗口。

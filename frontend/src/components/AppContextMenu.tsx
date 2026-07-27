@@ -1,5 +1,6 @@
 import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import './AppContextMenu.css'
 
 interface AppContextMenuProps {
   visible: boolean

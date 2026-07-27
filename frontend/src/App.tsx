@@ -5,7 +5,8 @@ import ToastNotification from './components/common/ToastNotification'
 import DesktopLayout from './components/layout/DesktopLayout'
 import DesktopPage from './pages/DesktopPage'
 import { applyWallpaper, resolveWallpaper, WALLPAPER_STORAGE_KEY } from './utils/wallpapers'
-import './styles/app.css'
+import './styles/global.css'
+import './styles/markdown.css'
 
 /**
  * @description 启动时恢复用户选择的桌面壁纸。

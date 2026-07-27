@@ -1,0 +1,33 @@
+/* 应用右键菜单通用样式。 */
+.app-context-menu {
+  position: fixed;
+  z-index: 30000;
+  min-width: 170px;
+  padding: 8px;
+  border: 2px solid var(--portal-app-border);
+  border-radius: 18px;
+  background: var(--portal-app-surface);
+  box-shadow: var(--portal-app-shadow);
+}
+
+.app-context-menu-btn {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 12px;
+  display: block;
+  padding: 0 12px;
+  color: var(--portal-app-text);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.app-context-menu-btn:hover:not(:disabled) {
+  background: var(--portal-app-accent-soft);
+}
+
+.app-context-menu-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}

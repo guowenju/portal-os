@@ -1,0 +1,212 @@
+/* 岛屿手册应用样式。 */
+.blog-app {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  height: 100%;
+  background: var(--portal-app-bg);
+  color: var(--portal-app-text);
+  overflow: hidden;
+}
+
+.blog-sidebar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  padding: 18px;
+  background: var(--portal-app-surface-subtle);
+  border-right: 2px solid var(--portal-app-border);
+  overflow: visible;
+}
+
+.blog-list {
+  display: grid;
+  min-height: 0;
+  overflow: auto;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.blog-filters {
+  display: grid;
+  gap: 10px;
+}
+
+.blog-entry-button {
+  width: 100%;
+  display: grid;
+  gap: 7px;
+  border: 2px solid var(--portal-app-border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--portal-app-text);
+  background: var(--portal-app-surface);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.blog-entry-button:hover {
+  transform: translateY(-2px);
+}
+
+.blog-entry-button:focus-visible,
+.blog-entry-button.active {
+  outline: 3px solid var(--portal-app-accent);
+  outline-offset: 2px;
+}
+
+.blog-entry-button span,
+.blog-entry-button small,
+.blog-article-meta {
+  color: var(--portal-app-muted);
+  line-height: 1.5;
+}
+
+.blog-entry-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.blog-pagination,
+.blog-neighbors {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.blog-toc {
+  display: grid;
+  gap: 6px;
+  margin: 20px 0;
+  border-left: 3px solid var(--portal-app-accent);
+  padding: 10px 14px;
+  background: var(--portal-app-surface-subtle);
+}
+
+.blog-toc a {
+  color: var(--portal-app-text);
+  text-decoration: none;
+}
+
+.blog-toc a[data-level='3'] {
+  padding-left: 16px;
+}
+
+.blog-entry-card {
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.blog-entry-card:hover {
+  transform: translateY(-2px);
+}
+
+.blog-entry-card.active {
+  outline: 3px solid var(--portal-app-accent);
+  background: var(--portal-app-accent-soft);
+}
+
+.blog-entry-card h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.blog-entry-card p {
+  margin: 0;
+  color: var(--portal-app-muted);
+  line-height: 1.55;
+}
+
+.blog-entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.blog-reader {
+  overflow: auto;
+  padding: clamp(18px, 4vw, 48px);
+  background: var(--portal-window-content-bg);
+}
+
+.blog-article {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.blog-article > header {
+  padding-bottom: 22px;
+  border-bottom: 2px dashed var(--portal-app-border);
+}
+
+.blog-article h1 {
+  margin: 4px 0 10px;
+  font-size: clamp(30px, 5vw, 48px);
+  line-height: 1.16;
+}
+
+.blog-eyebrow {
+  color: var(--portal-app-accent-strong);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.blog-mobile-back {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .blog-app {
+    display: block;
+  }
+
+  .blog-sidebar {
+    height: 100%;
+    border-right: 0;
+  }
+
+  .blog-app.reader-open .blog-sidebar {
+    display: none;
+  }
+
+  .blog-reader {
+    height: 100%;
+    padding: 18px;
+  }
+
+  .blog-app:not(.reader-open) .blog-reader {
+    display: none;
+  }
+
+  .blog-mobile-back {
+    display: inline-flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blog-entry-card {
+    transition: none;
+  }
+
+  .blog-entry-card:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blog-entry-button {
+    transition: none;
+  }
+}

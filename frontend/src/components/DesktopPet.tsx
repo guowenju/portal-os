@@ -11,6 +11,7 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import AppContextMenu from '@/components/AppContextMenu'
+import './DesktopPet.css'
 import { useMobileViewport } from '@/hooks/use-mobile-viewport'
 import { useWeatherStore, type WeatherCondition, type WeatherForecast } from '@/stores/weather'
 

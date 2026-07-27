@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import './AppTooltip.css'
 
 interface AppTooltipProps {
   text: string

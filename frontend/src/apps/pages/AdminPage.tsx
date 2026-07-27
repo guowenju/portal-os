@@ -13,6 +13,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import http from '@/api'
 import { renderMarkdownDocument } from '@/utils/markdown'
+import './AdminPage.css'
 
 interface TaxonomyItem {
   id: number
@@ -604,7 +605,7 @@ export default function AdminPage() {
   )
 
   const taxonomyView = (
-    <section className="admin-section">
+    <section className="admin-section admin-taxonomy-section">
       <div className="admin-inline-form">
         <Select
           value={taxonomyKind}
@@ -619,7 +620,11 @@ export default function AdminPage() {
           onChange={(event) => setTaxonomyName(event.target.value)}
           placeholder={t('app.admin.taxonomyName')}
         />
-        <Button type="primary" onClick={() => void createTaxonomy()}>
+        <Button
+          type="primary"
+          className="admin-taxonomy-create"
+          onClick={() => void createTaxonomy()}
+        >
           {t('app.admin.create')}
         </Button>
       </div>

@@ -5,6 +5,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import http from '@/api'
 import { renderMarkdownDocument } from '@/utils/markdown'
 import type { AppViewProps } from '@/apps/registry'
+import './BlogPage.css'
 
 interface TaxonomyItem {
   id: number

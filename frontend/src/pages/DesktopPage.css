@@ -1,0 +1,104 @@
+/* 桌面图标层与快捷方式样式。 */
+.app-desktop-container,
+.app-icon-layer {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-desktop-container,
+.app-icon-layer {
+  width: 100%;
+  height: 100%;
+}
+
+.app-icon-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.app-desktop-icon {
+  position: absolute;
+  width: 90px;
+  min-height: 92px;
+  padding: 7px 4px;
+  border-radius: 24px;
+  cursor: pointer;
+  text-align: center;
+  user-select: none;
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.app-desktop-icon:hover {
+  background: rgba(247, 243, 223, 0.58);
+  transform: translateY(-2px);
+}
+
+.app-desktop-icon.is-dragging {
+  opacity: 0.55;
+}
+
+.app-icon-image {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 5px;
+  border-radius: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  line-height: 1;
+  background: #f7cd67;
+  box-shadow: 0 5px 0 #bdaea0;
+}
+
+.app-icon-image .portal-icon {
+  display: block;
+  width: 42px;
+  height: 42px;
+}
+
+.app-icon-label {
+  display: inline-block;
+  max-width: 100%;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #fff9e3;
+  background: rgba(43, 33, 24, 0.54);
+  font-size: 12px;
+  font-weight: 800;
+  text-shadow: 0 1px 1px rgba(43, 33, 24, 0.5);
+}
+
+@media (max-width: 760px) {
+  .app-icon-layer {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+    align-content: start;
+    gap: 14px 8px;
+    padding: 20px 12px 132px;
+    overflow: auto;
+  }
+
+  .app-desktop-icon {
+    position: static;
+    width: 100%;
+    min-height: 92px;
+    padding: 8px 2px;
+    touch-action: manipulation;
+  }
+
+  .app-desktop-icon:hover {
+    transform: none;
+  }
+
+  .app-icon-image {
+    width: 58px;
+    height: 58px;
+  }
+}

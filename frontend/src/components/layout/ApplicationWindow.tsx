@@ -7,6 +7,7 @@ import {
 } from '@/stores/window-manager'
 import AppTooltip from '@/components/AppTooltip'
 import { useMobileViewport } from '@/hooks/use-mobile-viewport'
+import './ApplicationWindow.css'
 
 interface ApplicationWindowProps {
   windowData: WindowInstance

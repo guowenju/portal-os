@@ -1,0 +1,26 @@
+/* 桌面基础布局样式。 */
+.app-desktop-layout {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #bfe7c4;
+  background-image: var(--portal-desktop-overlay), var(--portal-desktop-wallpaper);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.app-desktop-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 760px) {
+  .app-desktop-layout {
+    min-width: 0;
+    background-image: var(--portal-desktop-overlay), var(--portal-mobile-wallpaper);
+    background-attachment: scroll;
+  }
+}

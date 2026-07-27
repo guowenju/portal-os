@@ -1,0 +1,52 @@
+/* 全局通知栈样式。 */
+.toast-stack {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 50000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast-card {
+  max-width: min(360px, calc(100vw - 36px));
+  border: 2px solid rgba(154, 131, 90, 0.26);
+  border-radius: 20px;
+  padding: 12px 16px;
+  color: #725d42;
+  background: #f7f3df;
+  box-shadow: 0 6px 0 rgba(189, 174, 160, 0.72);
+  cursor: pointer;
+  text-align: left;
+  font-weight: 800;
+}
+
+.toast-success {
+  background: #d1da49;
+}
+
+.toast-error {
+  background: #fc736d;
+  color: #fff;
+}
+
+.toast-warning {
+  background: #f7cd67;
+}
+
+.toast-info {
+  background: #82d5bb;
+}
+
+@media (max-width: 760px) {
+  .toast-stack {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+  }
+
+  .toast-card {
+    max-width: none;
+  }
+}

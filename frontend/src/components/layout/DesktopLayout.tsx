@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import DesktopHeader from './DesktopHeader'
+import './DesktopLayout.css'
 
 /**
  * @description 平台桌面布局，包含持久头部和桌面工作区。

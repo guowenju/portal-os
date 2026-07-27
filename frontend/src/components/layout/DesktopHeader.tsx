@@ -12,6 +12,7 @@ import {
   type WindowInstance,
 } from '@/stores/window-manager'
 import { useNotificationStore } from '@/stores/notification'
+import './DesktopHeader.css'
 
 type ProgressStatus = 'planned' | 'developing' | 'testing'
 
