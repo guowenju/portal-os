@@ -22,9 +22,12 @@
 
 .blog-list {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   min-height: 0;
   overflow: auto;
   gap: 12px;
+  padding-top: 2px;
   margin-top: 14px;
 }
 
@@ -58,6 +61,16 @@
 .blog-entry-button.active {
   outline: 3px solid var(--portal-app-accent);
   outline-offset: 2px;
+}
+
+.blog-entry-copy {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.blog-entry-copy span {
+  font-size: 0.875em;
 }
 
 .blog-entry-button span,

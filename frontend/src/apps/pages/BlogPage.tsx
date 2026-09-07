@@ -266,8 +266,9 @@ export default function BlogPage({ payload }: AppViewProps) {
                 {article.coverImageUrl && (
                   <img src={article.coverImageUrl} alt="" className="blog-entry-cover" />
                 )}
-                <strong>{article.title}</strong>
-                <span>{article.summary}</span>
+                <div className="blog-entry-copy">
+                  <strong>{article.title}</strong> · <span>{article.summary}</span>
+                </div>
                 <small>
                   {formatDate(article.publishedAt)} · {article.readingMinutes}{' '}
                   {t('app.blog.minutes')}
