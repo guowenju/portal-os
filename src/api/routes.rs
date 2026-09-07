@@ -1,12 +1,12 @@
 //! 路由注册：公开站点只保留应用 API 与前端静态资源回退。
 
-use crate::apps;
 use crate::services::static_handler::{admin_page, fallback_handler, public_content_router};
+use crate::{apps, persistence::Repositories};
 use anyhow::Result;
 use axum::extract::connect_info::ConnectInfo;
 use axum::{Router, body::Body, extract::DefaultBodyLimit, http::Request};
+use sqlx::SqlitePool;
 use std::net::SocketAddr;
-use toasty::Db;
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, OnRequest, TraceLayer};
 use tracing::{Level, info_span};
@@ -23,24 +23,24 @@ fn on_request_log(req: &Request<Body>, span: &tracing::Span) {
 }
 
 /// 创建公开站点主路由。
-pub async fn create_router(database: Db) -> Result<Router> {
+pub async fn create_router(database: SqlitePool) -> Result<Router> {
     let admin_path = apps::admin::configured_admin_path()?;
-    let repository = crate::persistence::repository::Repository::new(database);
-    apps::admin::ensure_admin(&repository).await?;
+    let repositories = Repositories::new(database);
+    apps::admin::ensure_admin(&repositories.admin).await?;
     let admin_route = format!("/{admin_path}");
     let admin_route_with_slash = format!("{admin_route}/");
-    let admin_state = apps::admin::AdminState { repository };
+    let app_state = apps::AppState { repositories };
 
     let router = Router::new()
         .route(&admin_route, axum::routing::get(admin_page))
         .route(&admin_route_with_slash, axum::routing::get(admin_page))
-        .merge(public_content_router().with_state(admin_state.clone()))
+        .merge(public_content_router().with_state(app_state.clone()))
         .nest("/api/v1", public_api_router()?)
         .nest(
             "/api/v1",
             apps::admin::router()
                 .merge(apps::blog::router())
-                .with_state(admin_state),
+                .with_state(app_state),
         )
         .layer(
             TraceLayer::new_for_http()

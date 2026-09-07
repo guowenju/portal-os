@@ -1,61 +1,100 @@
-//! 持久化基础设施：负责 SQLite 连接、建库和 Repository 出口。
+//! 持久化基础设施：负责 SQLite 连接池、迁移和领域仓储出口。
 
+pub mod admin_repository;
+pub mod blog_repository;
+pub mod media_repository;
 pub mod models;
-pub mod repository;
 
+use admin_repository::AdminRepository;
 use anyhow::{Context, Result};
-use std::{env, path::PathBuf};
-use toasty::Db;
+use blog_repository::BlogRepository;
+use media_repository::MediaRepository;
+use sqlx::{
+    SqlitePool,
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions},
+};
+use std::{env, path::PathBuf, time::Duration};
 
-/// 打开 SQLite 数据库并在首次启动时初始化数据结构。
-pub async fn open_database() -> Result<Db> {
+/// 应用使用的领域仓储集合。
+#[derive(Clone)]
+pub struct Repositories {
+    pub admin: AdminRepository,
+    pub blog: BlogRepository,
+    pub media: MediaRepository,
+}
+
+impl Repositories {
+    /// 使用同一连接池创建所有领域仓储。
+    pub fn new(pool: SqlitePool) -> Self {
+        Self {
+            admin: AdminRepository::new(pool.clone()),
+            blog: BlogRepository::new(pool.clone()),
+            media: MediaRepository::new(pool),
+        }
+    }
+}
+
+/// 打开 SQLite 连接池并执行嵌入式迁移。
+pub async fn open_database() -> Result<SqlitePool> {
     let data_dir = env::var_os("PORTAL_OS_DATA_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("data"));
     std::fs::create_dir_all(&data_dir).context("创建 PortalOS 数据目录失败")?;
-    let database_path = data_dir.join("portal-os.sqlite3");
-    let is_new_database = !database_path.exists();
-    let mut builder = Db::builder();
-    builder.models(toasty::models!(
-        models::AdminUser,
-        models::AdminSession,
-        models::Article,
-        models::Category,
-        models::Tag,
-        models::ArticleTag,
-        models::ArticleSlugHistory,
-        models::MediaAsset,
-        models::ArticleMedia,
-        models::SiteSettings,
-    ));
-    let mut db = builder
-        .build(toasty_driver_sqlite::Sqlite::open(&database_path))
+    let options = SqliteConnectOptions::new()
+        .filename(data_dir.join("portal-os.sqlite3"))
+        .create_if_missing(true)
+        .foreign_keys(true)
+        .busy_timeout(Duration::from_secs(5))
+        .journal_mode(SqliteJournalMode::Wal);
+    let pool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect_with(options)
         .await
         .context("连接 SQLite 数据库失败")?;
-    if is_new_database {
-        db.push_schema().await.context("初始化数据库结构失败")?;
-        let now = chrono::Utc::now().to_rfc3339();
-        models::SiteSettings::create()
-            .id(1)
-            .site_name("PortalOS")
-            .site_description("动物森林桌面博客")
-            .author_name("")
-            .site_url("")
-            .updated_at(now)
-            .version(1)
-            .exec(&mut db)
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .context("执行数据库迁移失败")?;
+    Ok(pool)
+}
+
+/// 创建执行真实迁移的单连接内存测试数据库。
+#[cfg(test)]
+pub(crate) async fn test_pool() -> SqlitePool {
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new()
+                .in_memory(true)
+                .foreign_keys(true),
+        )
+        .await
+        .expect("测试数据库应可连接");
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("测试数据库迁移应成功");
+    pool
+}
+
+#[cfg(test)]
+mod tests {
+    use super::test_pool;
+
+    /// 验证迁移会创建默认设置并启用外键约束。
+    #[tokio::test]
+    async fn migrates_fresh_database() {
+        let pool = test_pool().await;
+        let site_name =
+            sqlx::query_scalar::<_, String>("SELECT site_name FROM site_settings WHERE id = 1")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        let foreign_keys = sqlx::query_scalar::<_, i64>("PRAGMA foreign_keys")
+            .fetch_one(&pool)
             .await
-            .context("初始化站点设置失败")?;
+            .unwrap();
+        assert_eq!(site_name, "PortalOS");
+        assert_eq!(foreign_keys, 1);
     }
-    for pragma in [
-        "PRAGMA foreign_keys = ON",
-        "PRAGMA busy_timeout = 5000",
-        "PRAGMA journal_mode = WAL",
-    ] {
-        toasty::sql::query(pragma)
-            .exec(&mut db)
-            .await
-            .with_context(|| format!("执行 SQLite 初始化语句失败：{pragma}"))?;
-    }
-    Ok(db)
 }

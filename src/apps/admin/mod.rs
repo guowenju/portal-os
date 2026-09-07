@@ -2,9 +2,10 @@
 
 use crate::{
     api::response::{ApiError, ApiResponse},
+    apps::AppState,
     persistence::{
+        admin_repository::AdminRepository,
         models::{AdminSession, AdminUser},
-        repository::Repository,
     },
 };
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::SaltString};
@@ -31,14 +32,8 @@ const DEFAULT_ADMIN_PATH: &str = "admin";
 const RESERVED_ADMIN_PATH_PREFIXES: &[&str] = &["api", "assets", "blog", "media"];
 static LOGIN_FAILURES: OnceLock<Mutex<HashMap<String, (u8, Instant)>>> = OnceLock::new();
 
-/// 后台共享状态。
-#[derive(Clone)]
-pub struct AdminState {
-    pub repository: Repository,
-}
-
 /// 创建后台认证路由。
-pub fn router() -> Router<AdminState> {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/admin/auth/login", post(login))
         .route("/admin/auth/logout", post(logout))
@@ -96,7 +91,7 @@ fn validate_admin_credentials(username: &str, password: &str) -> anyhow::Result<
 }
 
 /// 在空库中创建唯一管理员。
-pub async fn ensure_admin(repository: &Repository) -> anyhow::Result<()> {
+pub async fn ensure_admin(repository: &AdminRepository) -> anyhow::Result<()> {
     if repository.admin().await?.is_some() {
         return Ok(());
     }
@@ -106,12 +101,8 @@ pub async fn ensure_admin(repository: &Repository) -> anyhow::Result<()> {
         .map_err(|_| anyhow::anyhow!("首次启动必须设置 PORTAL_OS_ADMIN_PASSWORD"))?;
     validate_admin_credentials(&username, &password)?;
     let now = Utc::now().to_rfc3339();
-    AdminUser::create()
-        .username(username.trim())
-        .password_hash(hash_password(&password)?)
-        .created_at(&now)
-        .updated_at(&now)
-        .exec(&mut repository.database())
+    repository
+        .create_admin(username.trim(), &hash_password(&password)?, &now)
         .await?;
     tracing::info!("已创建 PortalOS 唯一管理员");
     Ok(())
@@ -139,7 +130,7 @@ struct SessionData {
 }
 
 async fn login(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     Json(input): Json<LoginRequest>,
 ) -> Result<Response, ApiError> {
@@ -151,7 +142,13 @@ async fn login(
         .trim()
         .to_string();
     enforce_login_limit(&client)?;
-    let Some(user) = state.repository.admin().await.map_err(ApiError::internal)? else {
+    let Some(user) = state
+        .repositories
+        .admin
+        .admin()
+        .await
+        .map_err(ApiError::internal)?
+    else {
         return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
             "管理员尚未初始化",
@@ -174,14 +171,17 @@ async fn login(
     let token = random_token();
     let csrf = random_token();
     let now = Utc::now();
-    AdminSession::create()
-        .token_hash(hash_token(&token))
-        .admin_user_id(user.id)
-        .csrf_hash(hash_token(&csrf))
-        .created_at(now.to_rfc3339())
-        .expires_at((now + Duration::days(7)).to_rfc3339())
-        .last_active_at(now.to_rfc3339())
-        .exec(&mut state.repository.database())
+    state
+        .repositories
+        .admin
+        .create_session(&AdminSession {
+            token_hash: hash_token(&token),
+            admin_user_id: user.id,
+            csrf_hash: hash_token(&csrf),
+            created_at: now.to_rfc3339(),
+            expires_at: (now + Duration::days(7)).to_rfc3339(),
+            last_active_at: now.to_rfc3339(),
+        })
         .await
         .map_err(ApiError::internal)?;
     let mut response = Json(ApiResponse::ok(
@@ -203,10 +203,10 @@ async fn login(
 }
 
 async fn session(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<ApiResponse<SessionData>>, ApiError> {
-    let (user, record) = authenticated(&state.repository, &headers, false).await?;
+    let (user, record) = authenticated(&state.repositories.admin, &headers, false).await?;
     let csrf_token = cookie_value(&headers, "portal_admin_csrf")
         .filter(|token| hash_token(token) == record.csrf_hash)
         .ok_or_else(|| {
@@ -225,13 +225,12 @@ async fn session(
     )))
 }
 
-async fn logout(State(state): State<AdminState>, headers: HeaderMap) -> Result<Response, ApiError> {
-    let (_, record) = authenticated(&state.repository, &headers, true).await?;
-    AdminSession::get_by_token_hash(&mut state.repository.database(), &record.token_hash)
-        .await
-        .map_err(ApiError::internal)?
-        .delete()
-        .exec(&mut state.repository.database())
+async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Result<Response, ApiError> {
+    let (_, record) = authenticated(&state.repositories.admin, &headers, true).await?;
+    state
+        .repositories
+        .admin
+        .delete_session(&record.token_hash)
         .await
         .map_err(ApiError::internal)?;
     let mut response = Json(ApiResponse::ok("已退出登录", ())).into_response();
@@ -249,11 +248,11 @@ async fn logout(State(state): State<AdminState>, headers: HeaderMap) -> Result<R
 }
 
 async fn change_password(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     Json(input): Json<ChangePasswordRequest>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    let (mut user, _) = authenticated(&state.repository, &headers, true).await?;
+    let (user, _) = authenticated(&state.repositories.admin, &headers, true).await?;
     if !verify_password(&input.current_password, &user.password_hash) {
         return Err(ApiError::new(
             StatusCode::BAD_REQUEST,
@@ -268,37 +267,32 @@ async fn change_password(
             "INVALID_PASSWORD",
         ));
     }
-    user.update()
-        .password_hash(hash_password(&input.new_password).map_err(ApiError::internal)?)
-        .updated_at(Utc::now().to_rfc3339())
-        .exec(&mut state.repository.database())
+    state
+        .repositories
+        .admin
+        .change_password_and_clear_sessions(
+            user.id,
+            &hash_password(&input.new_password).map_err(ApiError::internal)?,
+            &Utc::now().to_rfc3339(),
+        )
         .await
         .map_err(ApiError::internal)?;
-    for record in AdminSession::filter_by_admin_user_id(user.id)
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?
-    {
-        record
-            .delete()
-            .exec(&mut state.repository.database())
-            .await
-            .map_err(ApiError::internal)?;
-    }
     Ok(Json(ApiResponse::ok("密码已修改，请重新登录", ())))
 }
 
 /// 校验后台会话，写操作同时校验 CSRF。
 pub async fn authenticated(
-    repository: &Repository,
+    repository: &AdminRepository,
     headers: &HeaderMap,
     csrf_required: bool,
 ) -> Result<(AdminUser, AdminSession), ApiError> {
     let token = cookie_value(headers, SESSION_COOKIE)
         .ok_or_else(|| ApiError::new(StatusCode::UNAUTHORIZED, "请先登录", "AUTH_REQUIRED"))?;
-    let record = AdminSession::get_by_token_hash(&mut repository.database(), hash_token(&token))
+    let record = repository
+        .session_by_token_hash(&hash_token(&token))
         .await
-        .map_err(ApiError::internal)?;
+        .map_err(ApiError::internal)?
+        .ok_or_else(|| ApiError::new(StatusCode::UNAUTHORIZED, "会话无效", "SESSION_INVALID"))?;
     if chrono::DateTime::parse_from_rfc3339(&record.expires_at)
         .map_err(ApiError::internal)?
         .with_timezone(&Utc)
@@ -334,9 +328,11 @@ pub async fn authenticated(
             ));
         }
     }
-    let user = AdminUser::get_by_id(&mut repository.database(), record.admin_user_id)
+    let user = repository
+        .user_by_id(record.admin_user_id)
         .await
-        .map_err(ApiError::internal)?;
+        .map_err(ApiError::internal)?
+        .ok_or_else(|| ApiError::new(StatusCode::UNAUTHORIZED, "会话无效", "SESSION_INVALID"))?;
     Ok((user, record))
 }
 

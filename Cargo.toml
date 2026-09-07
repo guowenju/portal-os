@@ -18,8 +18,6 @@ rust-embed = { version = "8.4.0" }
 mime_guess = { version = "2.0.4" }
 clap = { version = "4", features = ["derive"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-toasty = { version = "=0.8.0", features = ["sqlite"] }
-toasty-driver-sqlite = { version = "=0.8.0" }
 argon2 = { version = "0.5" }
 rand = { version = "0.9" }
 sha2 = { version = "0.10" }
@@ -28,6 +26,7 @@ dotenvy = { version = "0.15" }
 pulldown-cmark = { version = "0.13" }
 ammonia = { version = "4" }
 shadow-rs = { version = "1.4.0", features = ["metadata"] }
+sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "sqlite", "macros", "migrate"] }
 
 [build-dependencies]
 anyhow = "1"                                   

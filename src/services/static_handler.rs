@@ -1,9 +1,6 @@
 //! 公开内容与静态资源服务：输出可索引文章、订阅源和媒体文件。
 
-use crate::{
-    apps::admin::AdminState,
-    persistence::models::{Article, ArticleSlugHistory, MediaAsset},
-};
+use crate::{apps::AppState, persistence::models::Article};
 use ammonia::Builder as HtmlSanitizer;
 use axum::{
     Json, Router,
@@ -27,7 +24,7 @@ struct FrontendAssets;
 const ADMIN_ENTRY_MARKER: &str = r#"<meta name="portal-admin-entry" content="true">"#;
 
 /// 注册不位于 API 命名空间的公开内容路由。
-pub fn public_content_router() -> Router<AdminState> {
+pub fn public_content_router() -> Router<AppState> {
     Router::new()
         .route("/blog/{slug}", get(article_page))
         .route("/rss.xml", get(rss))
@@ -113,27 +110,32 @@ pub async fn fallback_handler(uri: Uri) -> impl IntoResponse {
 }
 
 async fn article_page(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     Path(slug): Path<String>,
 ) -> Result<Response, StatusCode> {
-    let article = Article::filter_by_slug(&slug)
-        .first()
-        .exec(&mut state.repository.database())
+    let article = state
+        .repositories
+        .blog
+        .article_by_slug(&slug)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let article = match article {
         Some(article) if article.status == "published" && article.deleted_at.is_none() => article,
         _ => {
-            let history = ArticleSlugHistory::filter_by_slug(&slug)
-                .first()
-                .exec(&mut state.repository.database())
+            let history = state
+                .repositories
+                .blog
+                .slug_history(&slug)
                 .await
                 .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
             if let Some(history) = history {
-                let current =
-                    Article::get_by_id(&mut state.repository.database(), history.article_id)
-                        .await
-                        .map_err(|_| StatusCode::NOT_FOUND)?;
+                let current = state
+                    .repositories
+                    .blog
+                    .article_by_id(history.article_id)
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                    .ok_or(StatusCode::NOT_FOUND)?;
                 if current.status == "published" && current.deleted_at.is_none() {
                     return Ok(
                         Redirect::permanent(&format!("/blog/{}", current.slug)).into_response()
@@ -144,7 +146,8 @@ async fn article_page(
         }
     };
     let settings = state
-        .repository
+        .repositories
+        .blog
         .site_settings()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -160,9 +163,13 @@ async fn article_page(
         "updatedAt": article.updated_at,
     });
     let share_image = match article.cover_media_id.or(settings.default_share_image_id) {
-        Some(id) => MediaAsset::get_by_id(&mut state.repository.database(), id)
+        Some(id) => state
+            .repositories
+            .media
+            .by_id(id)
             .await
             .ok()
+            .flatten()
             .map(|media| {
                 absolute_url(&settings.site_url, &format!("/media/{}", media.storage_key))
             }),
@@ -209,9 +216,10 @@ async fn article_page(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
-async fn rss(State(state): State<AdminState>) -> Result<Response, StatusCode> {
+async fn rss(State(state): State<AppState>) -> Result<Response, StatusCode> {
     let settings = state
-        .repository
+        .repositories
+        .blog
         .site_settings()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -239,9 +247,10 @@ async fn rss(State(state): State<AdminState>) -> Result<Response, StatusCode> {
     xml_response(body)
 }
 
-async fn sitemap(State(state): State<AdminState>) -> Result<Response, StatusCode> {
+async fn sitemap(State(state): State<AppState>) -> Result<Response, StatusCode> {
     let settings = state
-        .repository
+        .repositories
+        .blog
         .site_settings()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -264,9 +273,10 @@ async fn sitemap(State(state): State<AdminState>) -> Result<Response, StatusCode
     ))
 }
 
-async fn robots(State(state): State<AdminState>) -> Result<Response, StatusCode> {
+async fn robots(State(state): State<AppState>) -> Result<Response, StatusCode> {
     let settings = state
-        .repository
+        .repositories
+        .blog
         .site_settings()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -281,12 +291,13 @@ async fn robots(State(state): State<AdminState>) -> Result<Response, StatusCode>
 }
 
 async fn media(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     Path(storage_key): Path<String>,
 ) -> Result<Response, StatusCode> {
-    let item = MediaAsset::filter_by_storage_key(&storage_key)
-        .first()
-        .exec(&mut state.repository.database())
+    let item = state
+        .repositories
+        .media
+        .by_storage_key(&storage_key)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
@@ -306,16 +317,17 @@ async fn media(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
-async fn published_articles(state: &AdminState) -> Result<Vec<Article>, StatusCode> {
-    let mut articles: Vec<_> = Article::all()
-        .exec(&mut state.repository.database())
+async fn published_articles(state: &AppState) -> Result<Vec<Article>, StatusCode> {
+    state
+        .repositories
+        .blog
+        .articles(&crate::persistence::blog_repository::ArticleFilter {
+            status: Some("published"),
+            trash: false,
+            ..Default::default()
+        })
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .into_iter()
-        .filter(|article| article.status == "published" && article.deleted_at.is_none())
-        .collect();
-    articles.sort_by(|a, b| b.published_at.cmp(&a.published_at));
-    Ok(articles)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 fn render_markdown(markdown: &str) -> String {

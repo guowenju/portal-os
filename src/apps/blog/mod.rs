@@ -2,10 +2,13 @@
 
 use crate::{
     api::response::{ApiError, ApiResponse},
-    apps::admin::{AdminState, authenticated},
-    persistence::models::{
-        Article, ArticleMedia, ArticleSlugHistory, ArticleTag, Category, MediaAsset, SiteSettings,
-        Tag,
+    apps::{AppState, admin::authenticated},
+    persistence::models::{Article, Category, MediaAsset, Tag},
+    persistence::{
+        blog_repository::{
+            ArticleFilter, ArticleRelations, MutationResult, SaveArticle, UpdateSiteSettings,
+        },
+        media_repository::NewMedia,
     },
 };
 use axum::{
@@ -21,7 +24,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, env, path::PathBuf};
 
 /// 注册公开博客和受保护后台内容路由。
-pub fn router() -> Router<AdminState> {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/blog/articles", get(public_articles))
         .route("/blog/articles/{slug}", get(public_article))
@@ -59,7 +62,7 @@ pub fn router() -> Router<AdminState> {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaxonomyItem {
-    pub id: u64,
+    pub id: i64,
     pub name: String,
     pub slug: String,
     pub sort_order: i64,
@@ -75,7 +78,7 @@ pub struct ArticleLink {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArticleSummary {
-    pub id: u64,
+    pub id: i64,
     pub title: String,
     pub slug: String,
     pub summary: String,
@@ -106,10 +109,10 @@ struct AdminArticle {
     status: String,
     created_at: String,
     deleted_at: Option<String>,
-    version: u64,
-    category_id: Option<u64>,
-    cover_media_id: Option<u64>,
-    tag_ids: Vec<u64>,
+    version: i64,
+    category_id: Option<i64>,
+    cover_media_id: Option<i64>,
+    tag_ids: Vec<i64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -132,8 +135,8 @@ struct TaxonomyData {
 #[serde(rename_all = "camelCase")]
 struct ArticleQuery {
     q: Option<String>,
-    category: Option<u64>,
-    tag: Option<u64>,
+    category: Option<i64>,
+    tag: Option<i64>,
     status: Option<String>,
     trash: Option<bool>,
     page: Option<usize>,
@@ -147,16 +150,16 @@ struct ArticleInput {
     slug: String,
     summary: String,
     markdown: String,
-    category_id: Option<u64>,
-    cover_media_id: Option<u64>,
-    tag_ids: Vec<u64>,
-    version: u64,
+    category_id: Option<i64>,
+    cover_media_id: Option<i64>,
+    tag_ids: Vec<i64>,
+    version: i64,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct VersionInput {
-    version: u64,
+    version: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -174,9 +177,9 @@ pub struct SiteSettingsData {
     pub site_description: String,
     pub author_name: String,
     pub site_url: String,
-    pub default_share_image_id: Option<u64>,
+    pub default_share_image_id: Option<i64>,
     pub default_share_image_url: Option<String>,
-    pub version: u64,
+    pub version: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -186,23 +189,23 @@ struct SiteSettingsInput {
     site_description: String,
     author_name: String,
     site_url: String,
-    default_share_image_id: Option<u64>,
-    version: u64,
+    default_share_image_id: Option<i64>,
+    version: i64,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaData {
-    pub id: u64,
+    pub id: i64,
     pub original_name: String,
     pub url: String,
     pub mime_type: String,
-    pub byte_size: u64,
+    pub byte_size: i64,
     pub created_at: String,
 }
 
 async fn public_articles(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     Query(mut query): Query<ArticleQuery>,
 ) -> Result<Json<ApiResponse<PageData<ArticleSummary>>>, ApiError> {
     query.status = Some("published".into());
@@ -214,12 +217,13 @@ async fn public_articles(
 }
 
 async fn public_article(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     Path(slug): Path<String>,
 ) -> Result<Response, ApiError> {
-    if let Some(article) = Article::filter_by_slug(&slug)
-        .first()
-        .exec(&mut state.repository.database())
+    if let Some(article) = state
+        .repositories
+        .blog
+        .article_by_slug(&slug)
         .await
         .map_err(ApiError::internal)?
         && article.status == "published"
@@ -231,9 +235,10 @@ async fn public_article(
         ))
         .into_response());
     }
-    if let Some(history) = ArticleSlugHistory::filter_by_slug(&slug)
-        .first()
-        .exec(&mut state.repository.database())
+    if let Some(history) = state
+        .repositories
+        .blog
+        .slug_history(&slug)
         .await
         .map_err(ApiError::internal)?
     {
@@ -253,7 +258,7 @@ async fn public_article(
 }
 
 async fn public_taxonomy(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<TaxonomyData>>, ApiError> {
     Ok(Json(ApiResponse::ok(
         "分类标签读取成功",
@@ -262,11 +267,11 @@ async fn public_taxonomy(
 }
 
 async fn admin_articles(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     Query(query): Query<ArticleQuery>,
 ) -> Result<Json<ApiResponse<PageData<AdminArticle>>>, ApiError> {
-    authenticated(&state.repository, &headers, false).await?;
+    authenticated(&state.repositories.admin, &headers, false).await?;
     Ok(Json(ApiResponse::ok(
         "后台文章列表读取成功",
         list_admin_articles(&state, query).await?,
@@ -274,11 +279,11 @@ async fn admin_articles(
 }
 
 async fn admin_article(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<AdminArticle>>, ApiError> {
-    authenticated(&state.repository, &headers, false).await?;
+    authenticated(&state.repositories.admin, &headers, false).await?;
     let article = find_article(&state, id).await?;
     Ok(Json(ApiResponse::ok(
         "文章读取成功",
@@ -287,21 +292,15 @@ async fn admin_article(
 }
 
 async fn create_article(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<(StatusCode, Json<ApiResponse<AdminArticle>>), ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
+    authenticated(&state.repositories.admin, &headers, true).await?;
     let now = Utc::now().to_rfc3339();
-    let article = Article::create()
-        .title("")
-        .slug(format!("draft-{}", random_suffix()))
-        .summary("")
-        .markdown("")
-        .status("draft")
-        .created_at(&now)
-        .updated_at(&now)
-        .version(1)
-        .exec(&mut state.repository.database())
+    let article = state
+        .repositories
+        .blog
+        .create_draft(&format!("draft-{}", random_suffix()), &now)
         .await
         .map_err(ApiError::internal)?;
     Ok((
@@ -314,13 +313,13 @@ async fn create_article(
 }
 
 async fn update_article(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
     Json(input): Json<ArticleInput>,
 ) -> Result<Json<ApiResponse<AdminArticle>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
-    let mut article = find_article(&state, id).await?;
+    authenticated(&state.repositories.admin, &headers, true).await?;
+    let article = find_article(&state, id).await?;
     ensure_version(&article, input.version)?;
     validate_relations(
         &state,
@@ -334,30 +333,28 @@ async fn update_article(
     } else {
         available_slug(&state, &input.slug, Some(id)).await?
     };
-    if article.status == "published" && article.slug != slug {
-        ArticleSlugHistory::create()
-            .slug(&article.slug)
-            .article_id(article.id)
-            .exec(&mut state.repository.database())
+    let media_ids = resolve_media_ids(&state, &input.markdown).await?;
+    let updated_at = Utc::now().to_rfc3339();
+    let article = mutation_article(
+        state
+            .repositories
+            .blog
+            .save_article(SaveArticle {
+                id,
+                expected_version: input.version,
+                title: input.title.trim(),
+                slug: &slug,
+                summary: input.summary.trim(),
+                markdown: &input.markdown,
+                category_id: input.category_id,
+                cover_media_id: input.cover_media_id,
+                updated_at: &updated_at,
+                tag_ids: &input.tag_ids,
+                media_ids: &media_ids,
+            })
             .await
-            .map_err(ApiError::internal)?;
-    }
-    let next_version = article.version + 1;
-    article
-        .update()
-        .title(input.title.trim())
-        .slug(slug)
-        .summary(input.summary.trim())
-        .markdown(&input.markdown)
-        .category_id(input.category_id)
-        .cover_media_id(input.cover_media_id)
-        .updated_at(Utc::now().to_rfc3339())
-        .version(next_version)
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?;
-    replace_tags(&state, id, &input.tag_ids).await?;
-    replace_media_links(&state, id, &input.markdown).await?;
+            .map_err(ApiError::internal)?,
+    )?;
     Ok(Json(ApiResponse::ok(
         "文章已保存",
         admin_article_data(&state, article).await?,
@@ -365,32 +362,32 @@ async fn update_article(
 }
 
 async fn publish_article(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
     Json(input): Json<VersionInput>,
 ) -> Result<Json<ApiResponse<AdminArticle>>, ApiError> {
     mutate_status(&state, &headers, id, input.version, "published").await
 }
 
 async fn unpublish_article(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
     Json(input): Json<VersionInput>,
 ) -> Result<Json<ApiResponse<AdminArticle>>, ApiError> {
     mutate_status(&state, &headers, id, input.version, "draft").await
 }
 
 async fn mutate_status(
-    state: &AdminState,
+    state: &AppState,
     headers: &HeaderMap,
-    id: u64,
-    version: u64,
+    id: i64,
+    version: i64,
     status: &str,
 ) -> Result<Json<ApiResponse<AdminArticle>>, ApiError> {
-    authenticated(&state.repository, headers, true).await?;
-    let mut article = find_article(state, id).await?;
+    authenticated(&state.repositories.admin, headers, true).await?;
+    let article = find_article(state, id).await?;
     ensure_version(&article, version)?;
     if status == "published"
         && (article.title.trim().is_empty()
@@ -414,16 +411,14 @@ async fn mutate_status(
     } else {
         article.published_at.clone()
     };
-    let next_version = article.version + 1;
-    article
-        .update()
-        .status(status)
-        .published_at(published_at)
-        .updated_at(now)
-        .version(next_version)
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?;
+    let article = mutation_article(
+        state
+            .repositories
+            .blog
+            .set_status(id, version, status, published_at.as_deref(), &now)
+            .await
+            .map_err(ApiError::internal)?,
+    )?;
     Ok(Json(ApiResponse::ok(
         if status == "published" {
             "文章已发布"
@@ -435,45 +430,44 @@ async fn mutate_status(
 }
 
 async fn trash_article(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
     Query(input): Query<VersionInput>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
-    let mut article = find_article(&state, id).await?;
+    authenticated(&state.repositories.admin, &headers, true).await?;
+    let article = find_article(&state, id).await?;
     ensure_version(&article, input.version)?;
     let now = Utc::now().to_rfc3339();
-    let next_version = article.version + 1;
-    article
-        .update()
-        .deleted_at(&now)
-        .updated_at(now)
-        .version(next_version)
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?;
+    mutation_article(
+        state
+            .repositories
+            .blog
+            .set_deleted_at(id, input.version, Some(&now), &now)
+            .await
+            .map_err(ApiError::internal)?,
+    )?;
     Ok(Json(ApiResponse::ok("文章已移入回收站", ())))
 }
 
 async fn restore_article(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
     Json(input): Json<VersionInput>,
 ) -> Result<Json<ApiResponse<AdminArticle>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
-    let mut article = find_article(&state, id).await?;
+    authenticated(&state.repositories.admin, &headers, true).await?;
+    let article = find_article(&state, id).await?;
     ensure_version(&article, input.version)?;
-    let next_version = article.version + 1;
-    article
-        .update()
-        .deleted_at(None::<String>)
-        .updated_at(Utc::now().to_rfc3339())
-        .version(next_version)
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?;
+    let now = Utc::now().to_rfc3339();
+    let article = mutation_article(
+        state
+            .repositories
+            .blog
+            .set_deleted_at(id, input.version, None, &now)
+            .await
+            .map_err(ApiError::internal)?,
+    )?;
     Ok(Json(ApiResponse::ok(
         "文章已恢复",
         admin_article_data(&state, article).await?,
@@ -481,12 +475,12 @@ async fn restore_article(
 }
 
 async fn permanent_delete_article(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
     Query(input): Query<VersionInput>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
+    authenticated(&state.repositories.admin, &headers, true).await?;
     let article = find_article(&state, id).await?;
     ensure_version(&article, input.version)?;
     if article.deleted_at.is_none() {
@@ -496,41 +490,25 @@ async fn permanent_delete_article(
             "ARTICLE_NOT_TRASHED",
         ));
     }
-    clear_tags(&state, id).await?;
-    for link in ArticleMedia::filter_by_article_id(id)
-        .exec(&mut state.repository.database())
+    match state
+        .repositories
+        .blog
+        .permanently_delete_article(id, input.version)
         .await
         .map_err(ApiError::internal)?
     {
-        link.delete()
-            .exec(&mut state.repository.database())
-            .await
-            .map_err(ApiError::internal)?;
+        MutationResult::Updated(()) => {}
+        MutationResult::VersionConflict => return Err(version_conflict()),
+        MutationResult::NotFound => return Err(not_found()),
     }
-    for history in ArticleSlugHistory::filter_by_article_id(id)
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?
-    {
-        history
-            .delete()
-            .exec(&mut state.repository.database())
-            .await
-            .map_err(ApiError::internal)?;
-    }
-    article
-        .delete()
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?;
     Ok(Json(ApiResponse::ok("文章已永久删除", ())))
 }
 
 async fn admin_categories(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<ApiResponse<Vec<TaxonomyItem>>>, ApiError> {
-    authenticated(&state.repository, &headers, false).await?;
+    authenticated(&state.repositories.admin, &headers, false).await?;
     Ok(Json(ApiResponse::ok(
         "分类读取成功",
         taxonomy(&state).await?.categories,
@@ -538,10 +516,10 @@ async fn admin_categories(
 }
 
 async fn admin_tags(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<ApiResponse<Vec<TaxonomyItem>>>, ApiError> {
-    authenticated(&state.repository, &headers, false).await?;
+    authenticated(&state.repositories.admin, &headers, false).await?;
     Ok(Json(ApiResponse::ok(
         "标签读取成功",
         taxonomy(&state).await?.tags,
@@ -549,17 +527,20 @@ async fn admin_tags(
 }
 
 async fn create_category(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     Json(input): Json<TaxonomyInput>,
 ) -> Result<(StatusCode, Json<ApiResponse<TaxonomyItem>>), ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
+    authenticated(&state.repositories.admin, &headers, true).await?;
     let slug = normalize_slug(input.slug.as_deref().unwrap_or(&input.name))?;
-    let item = Category::create()
-        .name(required_name(&input.name)?)
-        .slug(slug)
-        .sort_order(input.sort_order.unwrap_or(0))
-        .exec(&mut state.repository.database())
+    let item = state
+        .repositories
+        .blog
+        .create_category(
+            required_name(&input.name)?,
+            &slug,
+            input.sort_order.unwrap_or(0),
+        )
         .await
         .map_err(ApiError::internal)?;
     Ok((
@@ -569,17 +550,20 @@ async fn create_category(
 }
 
 async fn create_tag(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     Json(input): Json<TaxonomyInput>,
 ) -> Result<(StatusCode, Json<ApiResponse<TaxonomyItem>>), ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
+    authenticated(&state.repositories.admin, &headers, true).await?;
     let slug = normalize_slug(input.slug.as_deref().unwrap_or(&input.name))?;
-    let item = Tag::create()
-        .name(required_name(&input.name)?)
-        .slug(slug)
-        .sort_order(input.sort_order.unwrap_or(0))
-        .exec(&mut state.repository.database())
+    let item = state
+        .repositories
+        .blog
+        .create_tag(
+            required_name(&input.name)?,
+            &slug,
+            input.sort_order.unwrap_or(0),
+        )
         .await
         .map_err(ApiError::internal)?;
     Ok((
@@ -589,61 +573,63 @@ async fn create_tag(
 }
 
 async fn update_category(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
     Json(input): Json<TaxonomyInput>,
 ) -> Result<Json<ApiResponse<TaxonomyItem>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
-    let mut item = Category::get_by_id(&mut state.repository.database(), id)
+    authenticated(&state.repositories.admin, &headers, true).await?;
+    let slug = normalize_slug(input.slug.as_deref().unwrap_or(&input.name))?;
+    let item = state
+        .repositories
+        .blog
+        .update_category(
+            id,
+            required_name(&input.name)?,
+            &slug,
+            input.sort_order.unwrap_or(0),
+        )
         .await
-        .map_err(ApiError::internal)?;
-    item.update()
-        .name(required_name(&input.name)?)
-        .slug(normalize_slug(
-            input.slug.as_deref().unwrap_or(&input.name),
-        )?)
-        .sort_order(input.sort_order.unwrap_or(0))
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?;
+        .map_err(ApiError::internal)?
+        .ok_or_else(not_found)?;
     Ok(Json(ApiResponse::ok("分类已更新", category_item(item))))
 }
 
 async fn update_tag(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
     Json(input): Json<TaxonomyInput>,
 ) -> Result<Json<ApiResponse<TaxonomyItem>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
-    let mut item = Tag::get_by_id(&mut state.repository.database(), id)
+    authenticated(&state.repositories.admin, &headers, true).await?;
+    let slug = normalize_slug(input.slug.as_deref().unwrap_or(&input.name))?;
+    let item = state
+        .repositories
+        .blog
+        .update_tag(
+            id,
+            required_name(&input.name)?,
+            &slug,
+            input.sort_order.unwrap_or(0),
+        )
         .await
-        .map_err(ApiError::internal)?;
-    item.update()
-        .name(required_name(&input.name)?)
-        .slug(normalize_slug(
-            input.slug.as_deref().unwrap_or(&input.name),
-        )?)
-        .sort_order(input.sort_order.unwrap_or(0))
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?;
+        .map_err(ApiError::internal)?
+        .ok_or_else(not_found)?;
     Ok(Json(ApiResponse::ok("标签已更新", tag_item(item))))
 }
 
 async fn delete_category(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
-    let in_use = Article::all()
-        .exec(&mut state.repository.database())
+    authenticated(&state.repositories.admin, &headers, true).await?;
+    let in_use = state
+        .repositories
+        .blog
+        .category_in_use(id)
         .await
-        .map_err(ApiError::internal)?
-        .iter()
-        .any(|article| article.category_id == Some(id));
+        .map_err(ApiError::internal)?;
     if in_use {
         return Err(ApiError::new(
             StatusCode::CONFLICT,
@@ -651,28 +637,30 @@ async fn delete_category(
             "CATEGORY_IN_USE",
         ));
     }
-    Category::get_by_id(&mut state.repository.database(), id)
+    if !state
+        .repositories
+        .blog
+        .delete_category(id)
         .await
         .map_err(ApiError::internal)?
-        .delete()
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?;
+    {
+        return Err(not_found());
+    }
     Ok(Json(ApiResponse::ok("分类已删除", ())))
 }
 
 async fn delete_tag(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
-    let in_use = ArticleTag::all()
-        .exec(&mut state.repository.database())
+    authenticated(&state.repositories.admin, &headers, true).await?;
+    let in_use = state
+        .repositories
+        .blog
+        .tag_in_use(id)
         .await
-        .map_err(ApiError::internal)?
-        .iter()
-        .any(|link| link.tag_id == id);
+        .map_err(ApiError::internal)?;
     if in_use {
         return Err(ApiError::new(
             StatusCode::CONFLICT,
@@ -680,21 +668,23 @@ async fn delete_tag(
             "TAG_IN_USE",
         ));
     }
-    Tag::get_by_id(&mut state.repository.database(), id)
+    if !state
+        .repositories
+        .blog
+        .delete_tag(id)
         .await
         .map_err(ApiError::internal)?
-        .delete()
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?;
+    {
+        return Err(not_found());
+    }
     Ok(Json(ApiResponse::ok("标签已删除", ())))
 }
 
 async fn admin_site_settings(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<ApiResponse<SiteSettingsData>>, ApiError> {
-    authenticated(&state.repository, &headers, false).await?;
+    authenticated(&state.repositories.admin, &headers, false).await?;
     Ok(Json(ApiResponse::ok(
         "站点设置读取成功",
         site_settings(&state).await?,
@@ -702,11 +692,11 @@ async fn admin_site_settings(
 }
 
 async fn update_site_settings(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     Json(input): Json<SiteSettingsInput>,
 ) -> Result<Json<ApiResponse<SiteSettingsData>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
+    authenticated(&state.repositories.admin, &headers, true).await?;
     validate_site_url(&input.site_url)?;
     if input.site_name.trim().is_empty() {
         return Err(ApiError::new(
@@ -716,9 +706,13 @@ async fn update_site_settings(
         ));
     }
     if let Some(id) = input.default_share_image_id {
-        MediaAsset::get_by_id(&mut state.repository.database(), id)
+        state
+            .repositories
+            .media
+            .by_id(id)
             .await
-            .map_err(|_| {
+            .map_err(ApiError::internal)?
+            .ok_or_else(|| {
                 ApiError::new(
                     StatusCode::UNPROCESSABLE_ENTITY,
                     "默认分享图不存在",
@@ -726,7 +720,10 @@ async fn update_site_settings(
                 )
             })?;
     }
-    let mut settings = SiteSettings::get_by_id(&mut state.repository.database(), 1)
+    let settings = state
+        .repositories
+        .blog
+        .site_settings()
         .await
         .map_err(ApiError::internal)?;
     if settings.version != input.version {
@@ -736,19 +733,27 @@ async fn update_site_settings(
             "SITE_SETTINGS_VERSION_CONFLICT",
         ));
     }
-    let next_version = settings.version + 1;
-    settings
-        .update()
-        .site_name(input.site_name.trim())
-        .site_description(input.site_description.trim())
-        .author_name(input.author_name.trim())
-        .site_url(input.site_url.trim().trim_end_matches('/'))
-        .default_share_image_id(input.default_share_image_id)
-        .updated_at(Utc::now().to_rfc3339())
-        .version(next_version)
-        .exec(&mut state.repository.database())
+    state
+        .repositories
+        .blog
+        .update_site_settings(UpdateSiteSettings {
+            expected_version: input.version,
+            site_name: input.site_name.trim(),
+            site_description: input.site_description.trim(),
+            author_name: input.author_name.trim(),
+            site_url: input.site_url.trim().trim_end_matches('/'),
+            default_share_image_id: input.default_share_image_id,
+            updated_at: &Utc::now().to_rfc3339(),
+        })
         .await
-        .map_err(ApiError::internal)?;
+        .map_err(ApiError::internal)?
+        .ok_or_else(|| {
+            ApiError::new(
+                StatusCode::CONFLICT,
+                "站点设置已被其他操作修改",
+                "SITE_SETTINGS_VERSION_CONFLICT",
+            )
+        })?;
     Ok(Json(ApiResponse::ok(
         "站点设置已保存",
         site_settings(&state).await?,
@@ -756,27 +761,28 @@ async fn update_site_settings(
 }
 
 async fn admin_media(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<ApiResponse<Vec<MediaData>>>, ApiError> {
-    authenticated(&state.repository, &headers, false).await?;
-    let mut items: Vec<_> = MediaAsset::all()
-        .exec(&mut state.repository.database())
+    authenticated(&state.repositories.admin, &headers, false).await?;
+    let items: Vec<_> = state
+        .repositories
+        .media
+        .all()
         .await
         .map_err(ApiError::internal)?
         .into_iter()
         .map(media_data)
         .collect();
-    items.sort_by(|a, b| b.created_at.cmp(&a.created_at));
     Ok(Json(ApiResponse::ok("图片列表读取成功", items)))
 }
 
 async fn upload_media(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<ApiResponse<MediaData>>), ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
+    authenticated(&state.repositories.admin, &headers, true).await?;
     let field = multipart
         .next_field()
         .await
@@ -825,13 +831,17 @@ async fn upload_media(
     tokio::fs::rename(&temporary_path, &final_path)
         .await
         .map_err(ApiError::internal)?;
-    let result = MediaAsset::create()
-        .original_name(original_name)
-        .storage_key(&storage_key)
-        .mime_type(mime_type)
-        .byte_size(bytes.len() as u64)
-        .created_at(Utc::now().to_rfc3339())
-        .exec(&mut state.repository.database())
+    let created_at = Utc::now().to_rfc3339();
+    let result = state
+        .repositories
+        .media
+        .create(NewMedia {
+            original_name: &original_name,
+            storage_key: &storage_key,
+            mime_type,
+            byte_size: bytes.len() as i64,
+            created_at: &created_at,
+        })
         .await;
     match result {
         Ok(media) => Ok((
@@ -846,37 +856,24 @@ async fn upload_media(
 }
 
 async fn delete_media(
-    State(state): State<AdminState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
-    Path(id): Path<u64>,
+    Path(id): Path<i64>,
 ) -> Result<Json<ApiResponse<()>>, ApiError> {
-    authenticated(&state.repository, &headers, true).await?;
-    let media = MediaAsset::get_by_id(&mut state.repository.database(), id)
-        .await
-        .map_err(|_| ApiError::new(StatusCode::NOT_FOUND, "图片不存在", "MEDIA_NOT_FOUND"))?;
-    let mut references = Vec::new();
-    for article in Article::all()
-        .exec(&mut state.repository.database())
+    authenticated(&state.repositories.admin, &headers, true).await?;
+    let media = state
+        .repositories
+        .media
+        .by_id(id)
         .await
         .map_err(ApiError::internal)?
-    {
-        if article.cover_media_id == Some(id)
-            || ArticleMedia::filter_by_article_id(article.id)
-                .exec(&mut state.repository.database())
-                .await
-                .map_err(ApiError::internal)?
-                .iter()
-                .any(|link| link.media_id == id)
-        {
-            references.push(article.title);
-        }
-    }
-    let settings = SiteSettings::get_by_id(&mut state.repository.database(), 1)
+        .ok_or_else(|| ApiError::new(StatusCode::NOT_FOUND, "图片不存在", "MEDIA_NOT_FOUND"))?;
+    let references = state
+        .repositories
+        .media
+        .references(id)
         .await
         .map_err(ApiError::internal)?;
-    if settings.default_share_image_id == Some(id) {
-        references.push("站点默认分享图".into());
-    }
     if !references.is_empty() {
         return Err(ApiError::new(
             StatusCode::CONFLICT,
@@ -885,9 +882,10 @@ async fn delete_media(
         ));
     }
     let path = media_directory().join(&media.storage_key);
-    media
-        .delete()
-        .exec(&mut state.repository.database())
+    state
+        .repositories
+        .media
+        .delete(id)
         .await
         .map_err(ApiError::internal)?;
     match tokio::fs::remove_file(path).await {
@@ -899,20 +897,37 @@ async fn delete_media(
 }
 
 async fn list_public_articles(
-    state: &AdminState,
+    state: &AppState,
     query: ArticleQuery,
 ) -> Result<PageData<ArticleSummary>, ApiError> {
     let page = query.page.unwrap_or(1).max(1);
     let page_size = query.page_size.unwrap_or(12).clamp(1, 50);
-    let articles = filtered_articles(state, &query).await?;
-    let total = articles.len();
+    let filter = article_filter(
+        &query,
+        Some(page_size as i64),
+        Some(((page - 1).saturating_mul(page_size)) as i64),
+    );
+    let articles = state
+        .repositories
+        .blog
+        .articles(&filter)
+        .await
+        .map_err(ApiError::internal)?;
+    let relations = state
+        .repositories
+        .blog
+        .article_relations(&articles)
+        .await
+        .map_err(ApiError::internal)?;
+    let total = state
+        .repositories
+        .blog
+        .article_count(&article_filter(&query, None, None))
+        .await
+        .map_err(ApiError::internal)? as usize;
     let mut items = Vec::new();
-    for article in articles
-        .into_iter()
-        .skip((page - 1).saturating_mul(page_size))
-        .take(page_size)
-    {
-        items.push(article_summary(state, &article).await?);
+    for article in articles {
+        items.push(article_summary(&article, &relations));
     }
     Ok(PageData {
         items,
@@ -923,20 +938,37 @@ async fn list_public_articles(
 }
 
 async fn list_admin_articles(
-    state: &AdminState,
+    state: &AppState,
     query: ArticleQuery,
 ) -> Result<PageData<AdminArticle>, ApiError> {
     let page = query.page.unwrap_or(1).max(1);
     let page_size = query.page_size.unwrap_or(20).clamp(1, 100);
-    let articles = filtered_articles(state, &query).await?;
-    let total = articles.len();
+    let filter = article_filter(
+        &query,
+        Some(page_size as i64),
+        Some(((page - 1).saturating_mul(page_size)) as i64),
+    );
+    let articles = state
+        .repositories
+        .blog
+        .articles(&filter)
+        .await
+        .map_err(ApiError::internal)?;
+    let relations = state
+        .repositories
+        .blog
+        .article_relations(&articles)
+        .await
+        .map_err(ApiError::internal)?;
+    let total = state
+        .repositories
+        .blog
+        .article_count(&article_filter(&query, None, None))
+        .await
+        .map_err(ApiError::internal)? as usize;
     let mut items = Vec::new();
-    for article in articles
-        .into_iter()
-        .skip((page - 1).saturating_mul(page_size))
-        .take(page_size)
-    {
-        items.push(admin_article_data(state, article).await?);
+    for article in articles {
+        items.push(admin_article_from_relations(article, &relations));
     }
     Ok(PageData {
         items,
@@ -947,49 +979,34 @@ async fn list_admin_articles(
 }
 
 async fn filtered_articles(
-    state: &AdminState,
+    state: &AppState,
     query: &ArticleQuery,
 ) -> Result<Vec<Article>, ApiError> {
-    let links = ArticleTag::all()
-        .exec(&mut state.repository.database())
+    state
+        .repositories
+        .blog
+        .articles(&article_filter(query, None, None))
         .await
-        .map_err(ApiError::internal)?;
-    let keyword = query.q.as_deref().unwrap_or_default().trim().to_lowercase();
-    let trash = query.trash.unwrap_or(false);
-    let mut articles: Vec<_> = Article::all()
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?
-        .into_iter()
-        .filter(|article| {
-            article.deleted_at.is_some() == trash
-                && query
-                    .status
-                    .as_ref()
-                    .is_none_or(|status| &article.status == status)
-                && query
-                    .category
-                    .is_none_or(|id| article.category_id == Some(id))
-                && query.tag.is_none_or(|id| {
-                    links
-                        .iter()
-                        .any(|link| link.article_id == article.id && link.tag_id == id)
-                })
-                && (keyword.is_empty()
-                    || article.title.to_lowercase().contains(&keyword)
-                    || article.summary.to_lowercase().contains(&keyword)
-                    || article.markdown.to_lowercase().contains(&keyword))
-        })
-        .collect();
-    articles.sort_by(|a, b| {
-        b.published_at
-            .cmp(&a.published_at)
-            .then_with(|| b.created_at.cmp(&a.created_at))
-    });
-    Ok(articles)
+        .map_err(ApiError::internal)
 }
 
-async fn article_detail(state: &AdminState, article: Article) -> Result<ArticleDetail, ApiError> {
+fn article_filter<'a>(
+    query: &'a ArticleQuery,
+    limit: Option<i64>,
+    offset: Option<i64>,
+) -> ArticleFilter<'a> {
+    ArticleFilter {
+        keyword: query.q.as_deref().unwrap_or_default().trim(),
+        category_id: query.category,
+        tag_id: query.tag,
+        status: query.status.as_deref(),
+        trash: query.trash.unwrap_or(false),
+        limit,
+        offset,
+    }
+}
+
+async fn article_detail(state: &AppState, article: Article) -> Result<ArticleDetail, ApiError> {
     let published = filtered_articles(
         state,
         &ArticleQuery {
@@ -1011,27 +1028,40 @@ async fn article_detail(state: &AdminState, article: Article) -> Result<ArticleD
         .and_then(|index| index.checked_sub(1))
         .and_then(|index| published.get(index))
         .map(article_link);
+    let relations = state
+        .repositories
+        .blog
+        .article_relations(std::slice::from_ref(&article))
+        .await
+        .map_err(ApiError::internal)?;
     Ok(ArticleDetail {
-        summary: article_summary(state, &article).await?,
+        summary: article_summary(&article, &relations),
         markdown: article.markdown,
         previous,
         next,
     })
 }
 
-async fn admin_article_data(
-    state: &AdminState,
-    article: Article,
-) -> Result<AdminArticle, ApiError> {
-    let tag_ids = ArticleTag::filter_by_article_id(article.id)
-        .exec(&mut state.repository.database())
+async fn admin_article_data(state: &AppState, article: Article) -> Result<AdminArticle, ApiError> {
+    let relations = state
+        .repositories
+        .blog
+        .article_relations(std::slice::from_ref(&article))
         .await
-        .map_err(ApiError::internal)?
+        .map_err(ApiError::internal)?;
+    Ok(admin_article_from_relations(article, &relations))
+}
+
+fn admin_article_from_relations(article: Article, relations: &ArticleRelations) -> AdminArticle {
+    let tag_ids = relations
+        .tags
+        .get(&article.id)
         .into_iter()
-        .map(|link| link.tag_id)
+        .flatten()
+        .map(|tag| tag.id)
         .collect();
-    Ok(AdminArticle {
-        summary: article_summary(state, &article).await?,
+    AdminArticle {
+        summary: article_summary(&article, relations),
         markdown: article.markdown,
         status: article.status,
         created_at: article.created_at,
@@ -1040,42 +1070,27 @@ async fn admin_article_data(
         category_id: article.category_id,
         cover_media_id: article.cover_media_id,
         tag_ids,
-    })
+    }
 }
 
-async fn article_summary(
-    state: &AdminState,
-    article: &Article,
-) -> Result<ArticleSummary, ApiError> {
-    let category = match article.category_id {
-        Some(id) => Some(category_item(
-            Category::get_by_id(&mut state.repository.database(), id)
-                .await
-                .map_err(ApiError::internal)?,
-        )),
-        None => None,
-    };
-    let mut tags = Vec::new();
-    for link in ArticleTag::filter_by_article_id(article.id)
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?
-    {
-        tags.push(tag_item(
-            Tag::get_by_id(&mut state.repository.database(), link.tag_id)
-                .await
-                .map_err(ApiError::internal)?,
-        ));
-    }
-    let cover_image_url = match article.cover_media_id {
-        Some(id) => Some(media_url(
-            &MediaAsset::get_by_id(&mut state.repository.database(), id)
-                .await
-                .map_err(ApiError::internal)?,
-        )),
-        None => None,
-    };
-    Ok(ArticleSummary {
+fn article_summary(article: &Article, relations: &ArticleRelations) -> ArticleSummary {
+    let category = article
+        .category_id
+        .and_then(|id| relations.categories.get(&id).cloned())
+        .map(category_item);
+    let tags = relations
+        .tags
+        .get(&article.id)
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .map(tag_item)
+        .collect();
+    let cover_image_url = article
+        .cover_media_id
+        .and_then(|id| relations.media.get(&id))
+        .map(media_url);
+    ArticleSummary {
         id: article.id,
         title: article.title.clone(),
         slug: article.slug.clone(),
@@ -1086,38 +1101,47 @@ async fn article_summary(
         reading_minutes: reading_minutes(&article.markdown),
         category,
         tags,
-    })
+    }
 }
 
-async fn taxonomy(state: &AdminState) -> Result<TaxonomyData, ApiError> {
-    let mut categories: Vec<_> = Category::all()
-        .exec(&mut state.repository.database())
+async fn taxonomy(state: &AppState) -> Result<TaxonomyData, ApiError> {
+    let categories: Vec<_> = state
+        .repositories
+        .blog
+        .categories()
         .await
         .map_err(ApiError::internal)?
         .into_iter()
         .map(category_item)
         .collect();
-    let mut tags: Vec<_> = Tag::all()
-        .exec(&mut state.repository.database())
+    let tags: Vec<_> = state
+        .repositories
+        .blog
+        .tags()
         .await
         .map_err(ApiError::internal)?
         .into_iter()
         .map(tag_item)
         .collect();
-    categories.sort_by_key(|item| item.sort_order);
-    tags.sort_by_key(|item| item.sort_order);
     Ok(TaxonomyData { categories, tags })
 }
 
-pub async fn site_settings(state: &AdminState) -> Result<SiteSettingsData, ApiError> {
-    let settings = SiteSettings::get_by_id(&mut state.repository.database(), 1)
+pub async fn site_settings(state: &AppState) -> Result<SiteSettingsData, ApiError> {
+    let settings = state
+        .repositories
+        .blog
+        .site_settings()
         .await
         .map_err(ApiError::internal)?;
     let default_share_image_url = match settings.default_share_image_id {
         Some(id) => Some(media_url(
-            &MediaAsset::get_by_id(&mut state.repository.database(), id)
+            &state
+                .repositories
+                .media
+                .by_id(id)
                 .await
-                .map_err(ApiError::internal)?,
+                .map_err(ApiError::internal)?
+                .ok_or_else(not_found)?,
         )),
         None => None,
     };
@@ -1173,7 +1197,7 @@ fn media_data(media: MediaAsset) -> MediaData {
     }
 }
 
-fn ensure_version(article: &Article, version: u64) -> Result<(), ApiError> {
+fn ensure_version(article: &Article, version: i64) -> Result<(), ApiError> {
     if article.version != version {
         return Err(ApiError::new(
             StatusCode::CONFLICT,
@@ -1238,23 +1262,23 @@ fn normalize_slug(value: &str) -> Result<String, ApiError> {
 }
 
 async fn available_slug(
-    state: &AdminState,
+    state: &AppState,
     value: &str,
-    current: Option<u64>,
+    current: Option<i64>,
 ) -> Result<String, ApiError> {
     let slug = normalize_slug(value)?;
-    let article_conflict = Article::filter_by_slug(&slug)
-        .first()
-        .exec(&mut state.repository.database())
+    let article_conflict = state
+        .repositories
+        .blog
+        .article_slug_conflict(&slug, current)
         .await
-        .map_err(ApiError::internal)?
-        .is_some_and(|article| Some(article.id) != current);
-    let history_conflict = ArticleSlugHistory::filter_by_slug(&slug)
-        .first()
-        .exec(&mut state.repository.database())
+        .map_err(ApiError::internal)?;
+    let history_conflict = state
+        .repositories
+        .blog
+        .history_slug_conflict(&slug, current)
         .await
-        .map_err(ApiError::internal)?
-        .is_some_and(|history| Some(history.article_id) != current);
+        .map_err(ApiError::internal)?;
     if article_conflict || history_conflict {
         return Err(ApiError::new(
             StatusCode::CONFLICT,
@@ -1266,15 +1290,19 @@ async fn available_slug(
 }
 
 async fn validate_relations(
-    state: &AdminState,
-    category_id: Option<u64>,
-    cover_media_id: Option<u64>,
-    tag_ids: &[u64],
+    state: &AppState,
+    category_id: Option<i64>,
+    cover_media_id: Option<i64>,
+    tag_ids: &[i64],
 ) -> Result<(), ApiError> {
     if let Some(id) = category_id {
-        Category::get_by_id(&mut state.repository.database(), id)
+        state
+            .repositories
+            .blog
+            .category_by_id(id)
             .await
-            .map_err(|_| {
+            .map_err(ApiError::internal)?
+            .ok_or_else(|| {
                 ApiError::new(
                     StatusCode::UNPROCESSABLE_ENTITY,
                     "分类不存在",
@@ -1283,9 +1311,13 @@ async fn validate_relations(
             })?;
     }
     if let Some(id) = cover_media_id {
-        MediaAsset::get_by_id(&mut state.repository.database(), id)
+        state
+            .repositories
+            .media
+            .by_id(id)
             .await
-            .map_err(|_| {
+            .map_err(ApiError::internal)?
+            .ok_or_else(|| {
                 ApiError::new(
                     StatusCode::UNPROCESSABLE_ENTITY,
                     "封面图片不存在",
@@ -1294,9 +1326,13 @@ async fn validate_relations(
             })?;
     }
     for &id in tag_ids {
-        Tag::get_by_id(&mut state.repository.database(), id)
+        state
+            .repositories
+            .blog
+            .tag_by_id(id)
             .await
-            .map_err(|_| {
+            .map_err(ApiError::internal)?
+            .ok_or_else(|| {
                 ApiError::new(
                     StatusCode::UNPROCESSABLE_ENTITY,
                     "标签不存在",
@@ -1307,52 +1343,7 @@ async fn validate_relations(
     Ok(())
 }
 
-async fn clear_tags(state: &AdminState, article_id: u64) -> Result<(), ApiError> {
-    for link in ArticleTag::filter_by_article_id(article_id)
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?
-    {
-        link.delete()
-            .exec(&mut state.repository.database())
-            .await
-            .map_err(ApiError::internal)?;
-    }
-    Ok(())
-}
-
-async fn replace_tags(
-    state: &AdminState,
-    article_id: u64,
-    tag_ids: &[u64],
-) -> Result<(), ApiError> {
-    clear_tags(state, article_id).await?;
-    for &tag_id in tag_ids {
-        ArticleTag::create()
-            .article_id(article_id)
-            .tag_id(tag_id)
-            .exec(&mut state.repository.database())
-            .await
-            .map_err(ApiError::internal)?;
-    }
-    Ok(())
-}
-
-async fn replace_media_links(
-    state: &AdminState,
-    article_id: u64,
-    markdown: &str,
-) -> Result<(), ApiError> {
-    for link in ArticleMedia::filter_by_article_id(article_id)
-        .exec(&mut state.repository.database())
-        .await
-        .map_err(ApiError::internal)?
-    {
-        link.delete()
-            .exec(&mut state.repository.database())
-            .await
-            .map_err(ApiError::internal)?;
-    }
+async fn resolve_media_ids(state: &AppState, markdown: &str) -> Result<Vec<i64>, ApiError> {
     let mut storage_keys = HashSet::new();
     for event in Parser::new(markdown) {
         if let Event::Start(MarkdownTag::Image { dest_url, .. }) = event
@@ -1361,33 +1352,47 @@ async fn replace_media_links(
             storage_keys.insert(key.to_string());
         }
     }
-    for storage_key in storage_keys {
-        let media = MediaAsset::filter_by_storage_key(&storage_key)
-            .first()
-            .exec(&mut state.repository.database())
-            .await
-            .map_err(ApiError::internal)?
-            .ok_or_else(|| {
-                ApiError::new(
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "正文引用了不存在的图片",
-                    "MEDIA_NOT_FOUND",
-                )
-            })?;
-        ArticleMedia::create()
-            .article_id(article_id)
-            .media_id(media.id)
-            .exec(&mut state.repository.database())
-            .await
-            .map_err(ApiError::internal)?;
+    let storage_keys = storage_keys.into_iter().collect::<Vec<_>>();
+    let media = state
+        .repositories
+        .blog
+        .media_by_storage_keys(&storage_keys)
+        .await
+        .map_err(ApiError::internal)?;
+    if media.len() != storage_keys.len() {
+        return Err(ApiError::new(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "正文引用了不存在的图片",
+            "MEDIA_NOT_FOUND",
+        ));
     }
-    Ok(())
+    Ok(media.into_iter().map(|item| item.id).collect())
 }
 
-async fn find_article(state: &AdminState, id: u64) -> Result<Article, ApiError> {
-    Article::get_by_id(&mut state.repository.database(), id)
+async fn find_article(state: &AppState, id: i64) -> Result<Article, ApiError> {
+    state
+        .repositories
+        .blog
+        .article_by_id(id)
         .await
-        .map_err(|_| not_found())
+        .map_err(ApiError::internal)?
+        .ok_or_else(not_found)
+}
+
+fn mutation_article(result: MutationResult<Article>) -> Result<Article, ApiError> {
+    match result {
+        MutationResult::Updated(article) => Ok(article),
+        MutationResult::NotFound => Err(not_found()),
+        MutationResult::VersionConflict => Err(version_conflict()),
+    }
+}
+
+fn version_conflict() -> ApiError {
+    ApiError::new(
+        StatusCode::CONFLICT,
+        "文章已被其他操作修改",
+        "ARTICLE_VERSION_CONFLICT",
+    )
 }
 
 fn not_found() -> ApiError {
